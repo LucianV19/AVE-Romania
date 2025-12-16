@@ -1,7 +1,9 @@
 // types.ts
 
 export enum View {
+  HOME = 'Acasă',
   JUDGE = 'Portal Jurat',
+  JURAT_ACCESS = 'Acces Jurat',
   LEADERBOARD = 'Clasament',
   ADMIN = 'Administrare',
   DOCUMENTATION = 'Documentație',

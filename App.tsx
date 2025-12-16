@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Header from './components/Header';
+import HomeView from './components/HomeView';
+import JuratAccessView from './components/JuratAccessView';
 import JudgeView from './components/JudgeView';
 import LeaderboardView from './components/LeaderboardView';
 import AdminView from './components/AdminView';
@@ -12,7 +14,7 @@ const App: React.FC = () => {
   const ALL_USERS: User[] = [...JURATI, ...ADMINI];
 
   // App states with mock data initialization
-  const [activeView, setActiveView] = useState<View>(View.LEADERBOARD);
+  const [activeView, setActiveView] = useState<View>(View.HOME);
   const [currentUser, setCurrentUser] = useState<User>(ADMINI[0]);
   const [candidates, setCandidates] = useState<Candidat[]>(CANDIDATI);
   const [judges, setJudges] = useState<Jurat[]>(JURATI);
@@ -131,6 +133,15 @@ const App: React.FC = () => {
     }
 
     switch (activeView) {
+      case View.HOME:
+        return <HomeView 
+                    onNavigate={handleSetView}
+                />;
+      case View.JURAT_ACCESS:
+        return <JuratAccessView 
+                    onNavigate={handleSetView}
+                    onGoHome={() => handleSetView(View.HOME)}
+                />;
       case View.JUDGE:
         if (currentUser.rol !== UserRole.JUDGE) {
             return <div className="text-center p-10"><p className="text-red-600 dark:text-red-400">Nu aveți permisiuni pentru a accesa această pagină.</p></div>
@@ -175,14 +186,16 @@ const App: React.FC = () => {
 
   return (
     <div className="bg-gray-100/50 dark:bg-slate-900 min-h-screen">
-      <Header
-        currentView={activeView}
-        setView={handleSetView}
-        currentUser={currentUser}
-        setCurrentUser={setCurrentUser}
-        allUsers={ALL_USERS}
-      />
-      <main className="container mx-auto p-4 sm:p-6 lg:p-8">
+      {activeView !== View.HOME && activeView !== View.JURAT_ACCESS && (
+        <Header
+          currentView={activeView}
+          setView={handleSetView}
+          currentUser={currentUser}
+          setCurrentUser={setCurrentUser}
+          allUsers={ALL_USERS}
+        />
+      )}
+      <main className={activeView === View.HOME || activeView === View.JURAT_ACCESS ? '' : 'container mx-auto p-4 sm:p-6 lg:p-8'}>
         {renderView()}
       </main>
     </div>
