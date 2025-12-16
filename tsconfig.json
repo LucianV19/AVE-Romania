@@ -23,6 +23,7 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./*"],
+      "@formular/*": ["./formular/*"],
       "~/*": ["./src/*"]
     },
     "resolveJsonModule": true,
