@@ -9,9 +9,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.87.3",
+    "pdfjs-dist": "^3.11.174",
     "react": "^19.1.1",
-    "react-dom": "^19.1.1",
-    "pdfjs-dist": "^3.11.174"
+    "react-dom": "^19.1.1"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",

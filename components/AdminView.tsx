@@ -5,6 +5,7 @@ import { PlusIcon, TrashIcon, PencilSquareIcon, DownloadIcon, ClipboardDocumentC
 import { ADMINI } from '../constants';
 import Tooltip from './shared/Tooltip';
 import ScoringPanel from './shared/ScoringPanel';
+import JuryManagement from './JuryManagement';
 
 // Helper hook for debouncing input to improve performance on large lists
 function useDebounce<T>(value: T, delay: number): T {
@@ -41,7 +42,7 @@ type AdminViewProps = {
     addAuditLog: (log: Omit<AuditLog, 'id' | 'timestamp'>) => void;
 };
 
-type AdminTab = 'config' | 'assignments' | 'audit';
+type AdminTab = 'config' | 'assignments' | 'audit' | 'jury';
 
 type EditingItem =
   | { type: 'stage'; data: Stage | { nume: string; activ: boolean } }
@@ -1962,6 +1963,8 @@ const AdminView: React.FC<AdminViewProps> = (props) => {
                 return <AssignmentManagement {...props} />;
             case 'audit':
                 return <AuditAndExport {...props} />;
+            case 'jury':
+                return <JuryManagement />;
             default:
                 return null;
         }
@@ -1977,6 +1980,9 @@ const AdminView: React.FC<AdminViewProps> = (props) => {
                     </button>
                     <button onClick={() => setActiveTab('config')} className={`${activeTab === 'config' ? 'border-ave-blue text-ave-blue' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:border-slate-500'} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}>
                         Configurare Competiție
+                    </button>
+                    <button onClick={() => setActiveTab('jury')} className={`${activeTab === 'jury' ? 'border-ave-blue text-ave-blue' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:border-slate-500'} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}>
+                        Înscrieri Jurați
                     </button>
                      <button onClick={() => setActiveTab('audit')} className={`${activeTab === 'audit' ? 'border-ave-blue text-ave-blue' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:border-slate-500'} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}>
                         Jurnal de Audit & Export
