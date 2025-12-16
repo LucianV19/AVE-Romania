@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../supabase-client';
 import { PencilSquareIcon, TrashIcon, CheckBadgeIcon, XMarkIcon, DownloadIcon, SearchIcon } from './shared/icons';
 import Card from './shared/Card';
 
@@ -39,16 +38,77 @@ const JuryManagement: React.FC = () => {
     fetchRegistrations();
   }, []);
 
-  const fetchRegistrations = async () => {
+  const fetchRegistrations = () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('inscrieri_jurati')
-        .select('*')
-        .order('created_at', { ascending: false });
+      let data = JSON.parse(localStorage.getItem('juryRegistrations') || '[]');
 
-      if (error) throw error;
-      setRegistrations(data || []);
+      if (data.length === 0) {
+        data = [
+          {
+            id: 'demo_jury_1',
+            nume: 'Popescu',
+            prenume: 'Maria',
+            email: 'maria.popescu@example.com',
+            telefon: '0721123456',
+            profesie: 'Director Executiv',
+            organizatie: 'Fundația pentru Educație',
+            experienta: 'Peste 15 ani de experiență în managementul educațional și evaluarea proiectelor educaționale.',
+            domeniu_expertiza: 'Leadership Educațional',
+            ani_experienta: 15,
+            linkedin_url: 'https://linkedin.com/in/mariapopescu',
+            motivatie: 'Doresc să contribui la recunoașterea și promovarea excelenței în educație prin evaluarea obiectivă a directorilor de școală.',
+            foto_url: '',
+            status: 'aprobat',
+            nota_admin: 'Experiență relevantă în domeniu',
+            created_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+            updated_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+          },
+          {
+            id: 'demo_jury_2',
+            nume: 'Ionescu',
+            prenume: 'Alexandru',
+            email: 'alex.ionescu@university.ro',
+            telefon: '0732456789',
+            profesie: 'Profesor Universitar',
+            organizatie: 'Universitatea București',
+            experienta: 'Profesor universitar cu 20 de ani de experiență în domeniul educației și formării cadrelor didactice.',
+            domeniu_expertiza: 'Educație și Pedagogie',
+            ani_experienta: 20,
+            linkedin_url: '',
+            motivatie: 'Îmi doresc să identific și să susțin directorii care implementează cele mai bune practici în școli.',
+            foto_url: '',
+            status: 'aprobat',
+            nota_admin: '',
+            created_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+            updated_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
+          },
+          {
+            id: 'demo_jury_3',
+            nume: 'Dumitrescu',
+            prenume: 'Elena',
+            email: 'elena.dumitrescu@consulting.com',
+            telefon: '0745678901',
+            profesie: 'Consultant Educațional',
+            organizatie: 'EduConsult România',
+            experienta: 'Consultant independent specializat în evaluarea și dezvoltarea instituțiilor educaționale.',
+            domeniu_expertiza: 'Management Școlar',
+            ani_experienta: 12,
+            linkedin_url: 'https://linkedin.com/in/elenadumitrescu',
+            motivatie: 'Vreau să fiu parte din procesul de recunoaștere a directorilor excelenți care transformă educația.',
+            foto_url: '',
+            status: 'in_asteptare',
+            nota_admin: '',
+            created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+            updated_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
+          }
+        ];
+        localStorage.setItem('juryRegistrations', JSON.stringify(data));
+      }
+
+      setRegistrations(data.sort((a: JuryRegistration, b: JuryRegistration) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      ));
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -56,35 +116,26 @@ const JuryManagement: React.FC = () => {
     }
   };
 
-  const handleStatusChange = async (id: string, newStatus: string) => {
+  const handleStatusChange = (id: string, newStatus: string) => {
     try {
-      const { error } = await supabase
-        .from('inscrieri_jurati')
-        .update({ status: newStatus })
-        .eq('id', id);
-
-      if (error) throw error;
-
-      setRegistrations(prev =>
-        prev.map(reg => reg.id === id ? { ...reg, status: newStatus } : reg)
+      const updatedRegistrations = registrations.map(reg =>
+        reg.id === id ? { ...reg, status: newStatus, updated_at: new Date().toISOString() } : reg
       );
+
+      localStorage.setItem('juryRegistrations', JSON.stringify(updatedRegistrations));
+      setRegistrations(updatedRegistrations);
     } catch (err: any) {
       alert('Eroare la actualizare status: ' + err.message);
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = (id: string) => {
     if (!confirm('Sigur doriți să ștergeți această înscriere?')) return;
 
     try {
-      const { error } = await supabase
-        .from('inscrieri_jurati')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
-
-      setRegistrations(prev => prev.filter(reg => reg.id !== id));
+      const updatedRegistrations = registrations.filter(reg => reg.id !== id);
+      localStorage.setItem('juryRegistrations', JSON.stringify(updatedRegistrations));
+      setRegistrations(updatedRegistrations);
     } catch (err: any) {
       alert('Eroare la ștergere: ' + err.message);
     }
@@ -95,20 +146,16 @@ const JuryManagement: React.FC = () => {
     setEditForm(registration);
   };
 
-  const handleSaveEdit = async () => {
+  const handleSaveEdit = () => {
     if (!editingId) return;
 
     try {
-      const { error } = await supabase
-        .from('inscrieri_jurati')
-        .update(editForm)
-        .eq('id', editingId);
-
-      if (error) throw error;
-
-      setRegistrations(prev =>
-        prev.map(reg => reg.id === editingId ? { ...reg, ...editForm } : reg)
+      const updatedRegistrations = registrations.map(reg =>
+        reg.id === editingId ? { ...reg, ...editForm, updated_at: new Date().toISOString() } : reg
       );
+
+      localStorage.setItem('juryRegistrations', JSON.stringify(updatedRegistrations));
+      setRegistrations(updatedRegistrations);
       setEditingId(null);
       setEditForm({});
     } catch (err: any) {

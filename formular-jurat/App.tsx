@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { JuryFormData, JuryFormErrors, ThemeColors } from './types';
 import { STEPS, DOMENII_EXPERTIZA } from './constants';
-import { submitJuryRegistration } from './supabase';
 
 const initialFormData: JuryFormData = {
   nume: '',
@@ -143,7 +142,10 @@ const App: React.FC = () => {
     setSubmitError(null);
 
     try {
-      await submitJuryRegistration({
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      const registration = {
+        id: `jury_${Date.now()}`,
         nume: formData.nume,
         prenume: formData.prenume,
         email: formData.email,
@@ -153,10 +155,18 @@ const App: React.FC = () => {
         experienta: formData.experienta,
         domeniu_expertiza: formData.domeniu_expertiza,
         ani_experienta: parseInt(formData.ani_experienta) || 0,
-        linkedin_url: formData.linkedin_url || undefined,
+        linkedin_url: formData.linkedin_url || '',
         motivatie: formData.motivatie,
-        foto_url: formData.foto_url || undefined
-      });
+        foto_url: formData.foto_url || '',
+        status: 'in_asteptare',
+        nota_admin: '',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      const existingRegistrations = JSON.parse(localStorage.getItem('juryRegistrations') || '[]');
+      existingRegistrations.push(registration);
+      localStorage.setItem('juryRegistrations', JSON.stringify(existingRegistrations));
 
       localStorage.removeItem('juryFormData');
       setIsSubmitted(true);
