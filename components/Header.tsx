@@ -39,7 +39,7 @@ const Header: React.FC<HeaderProps> = ({ currentView, setView, currentUser, setC
                 ))}
             </div>
             <a
-              href="/formular-jurat/index.html"
+              href="./formular-jurat/index.html"
               target="_blank"
               rel="noopener noreferrer"
               className="px-4 py-1.5 text-sm font-semibold rounded-full bg-ave-blue hover:bg-ave-dark-blue text-white transition-colors duration-300"

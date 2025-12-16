@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && npm run build:jury && npm run copy:jury",
+    "build:jury": "cd formular-jurat && npm run build",
+    "copy:jury": "mkdir -p dist/formular-jurat && cp -r formular-jurat/dist/* dist/formular-jurat/",
     "preview": "vite preview"
   },
   "dependencies": {
