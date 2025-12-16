@@ -1,0 +1,5 @@
+{
+  "name": "Formular Înscriere Gală",
+  "description": "Un formular multi-step simplificat pentru înscrierea la o gală, bazat pe formularul de pe ave-romania.ro, cu funcționalitate de salvare a progresului și o experiență de utilizare îmbunătățită.",
+  "requestFramePermissions": []
+}

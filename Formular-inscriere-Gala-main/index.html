@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ro">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Formular Înscriere Gală</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              'brand-bg': 'var(--color-bg-start, #100E1D)',
+              'brand-bg-end': 'var(--color-bg-end, #16213e)',
+              'brand-input-bg': 'var(--color-input-bg, #D7D2E8)',
+              'brand-text-dark': 'var(--color-text-dark, #2E234F)',
+              'brand-text-light': 'var(--color-text-light, #DCD8EC)',
+              'brand-button': 'var(--color-button, #575A89)',
+              'brand-white': 'var(--color-white, #FFFFFF)',
+            },
+            fontFamily: {
+              sans: ['Lato', 'sans-serif'],
+            },
+            animation: {
+              'add-item': 'add-item 0.5s ease-out forwards',
+              'step-enter': 'step-enter 0.4s ease-out forwards',
+              'step-exit': 'step-exit 0.3s ease-in forwards',
+            },
+            keyframes: {
+              'add-item': {
+                'from': { opacity: '0', transform: 'translateY(16px)' },
+                'to': { opacity: '1', transform: 'translateY(0)' },
+              },
+              'step-enter': {
+                'from': { opacity: '0', transform: 'translateY(24px)' },
+                'to': { opacity: '1', transform: 'translateY(0)' },
+              },
+              'step-exit': {
+                'from': { opacity: '1', transform: 'translateY(0)' },
+                'to': { opacity: '0', transform: 'translateY(24px)' },
+              }
+            }
+          },
+        },
+      }
+    </script>
+    <style>
+      /* Override browser autofill styles */
+      input:-webkit-autofill,
+      input:-webkit-autofill:hover,
+      input:-webkit-autofill:focus,
+      input:-webkit-autofill:active {
+          -webkit-box-shadow: 0 0 0 30px var(--color-input-bg, #D7D2E8) inset !important;
+          -webkit-text-fill-color: var(--color-text-dark, #2E234F) !important;
+          transition: background-color 5000s ease-in-out 0s;
+      }
+
+      /* Animation for Success Screen */
+      @keyframes draw-circle {
+        from { stroke-dashoffset: 157; }
+        to { stroke-dashoffset: 0; }
+      }
+      @keyframes draw-check {
+        from { stroke-dashoffset: 48; }
+        to { stroke-dashoffset: 0; }
+      }
+      .animate-draw-circle {
+        stroke-dasharray: 157;
+        stroke-dashoffset: 157;
+        animation: draw-circle 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+      }
+      .animate-draw-check {
+        stroke-dasharray: 48;
+        stroke-dashoffset: 48;
+        animation: draw-check 0.4s 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+      }
+      @keyframes fade-in {
+        from { opacity: 0; transform: scale(0.98); }
+        to { opacity: 1; transform: scale(1); }
+      }
+      .animate-fade-in {
+        animation: fade-in 0.5s ease-out forwards;
+      }
+    </style>
+    <style>
+      @media print {
+        body { background: #fff !important; color: #000 !important; }
+        .bg-gradient-to-br { background-image: none !important; }
+        a { color: #000 !important; text-decoration: none !important; }
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+    <link rel="manifest" href="/manifest.json" />
+  </head>
+  <body class="bg-gradient-to-br from-brand-bg to-brand-bg-end font-sans text-brand-white">
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>

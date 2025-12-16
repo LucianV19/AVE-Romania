@@ -1,0 +1,11 @@
+{
+  "name": "Formular Înscriere Gală",
+  "short_name": "Formular Gală",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#575A89",
+  "icons": [
+    { "src": "/vite.svg", "sizes": "192x192", "type": "image/svg+xml" }
+  ]
+}
