@@ -17,8 +17,8 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate }) => {
   };
 
   const handleAdminClick = () => {
-    // Navigate to Admin view
-    onNavigate(View.ADMIN);
+    // Navigate to Admin access (login) page
+    onNavigate(View.ADMIN_ACCESS);
   };
 
   return (

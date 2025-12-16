@@ -4,8 +4,9 @@ export enum View {
   HOME = 'Acasă',
   JUDGE = 'Portal Jurat',
   JURAT_ACCESS = 'Acces Jurat',
-  LEADERBOARD = 'Clasament',
   ADMIN = 'Administrare',
+  ADMIN_ACCESS = 'Acces Administrator',
+  LEADERBOARD = 'Clasament',
   DOCUMENTATION = 'Documentație',
 }
 
