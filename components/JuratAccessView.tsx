@@ -1,12 +1,27 @@
 import React, { useState } from 'react';
 import { View, Jurat, UserRole } from '../types';
+import JuratRegistrationForm from './JuratRegistrationForm';
 
 interface JuratAccessViewProps {
   onNavigate: (view: View, user?: Jurat) => void;
   onGoHome: () => void;
 }
 
+interface JuratFormData {
+  prenume: string;
+  nume: string;
+  functie: string;
+  responsabilitati: string[];
+  linkedinProfile: string;
+  facebookProfile: string;
+  otherProfile: string;
+  recomandari: string;
+  acordGDPR: boolean;
+  acordRegulament: boolean;
+}
+
 const JuratAccessView: React.FC<JuratAccessViewProps> = ({ onNavigate, onGoHome }) => {
+  const [showRegistrationForm, setShowRegistrationForm] = useState(false);
   const [activeTab, setActiveTab] = useState<'login' | 'signup'>('login');
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
@@ -81,25 +96,56 @@ const JuratAccessView: React.FC<JuratAccessViewProps> = ({ onNavigate, onGoHome 
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 500));
 
-      // Create new jurat
-      const jurat: Jurat = {
-        id: `jurat_${Date.now()}`,
-        nume: signupName,
-        rol: UserRole.JUDGE,
-      };
+      // Save basic info and open full registration form
+      localStorage.setItem('juratBasicInfo', JSON.stringify({
+        email: signupEmail,
+        password: signupPassword,
+      }));
 
-      // Save to localStorage
-      localStorage.setItem('currentJurat', JSON.stringify(jurat));
-      localStorage.setItem('currentUser', JSON.stringify(jurat));
-
-      // Navigate to judge panel
-      onNavigate(View.JUDGE, jurat);
+      // Open full registration form
+      setShowRegistrationForm(true);
+      setLoading(false);
     } catch (err) {
       setError('Eroare la înregistrare. Te rog încearcă din nou.');
-    } finally {
       setLoading(false);
     }
   };
+
+  const handleFormSubmit = (formData: JuratFormData) => {
+    // Create jurat user
+    const jurat: Jurat = {
+      id: `jurat_${Date.now()}`,
+      nume: `${formData.prenume} ${formData.nume}`,
+      rol: UserRole.JUDGE,
+    };
+
+    // Save to localStorage
+    localStorage.setItem('currentJurat', JSON.stringify(jurat));
+    localStorage.setItem('currentUser', JSON.stringify(jurat));
+    localStorage.setItem('juratFormData', JSON.stringify(formData));
+
+    // Navigate to judge panel after 2 seconds
+    setTimeout(() => {
+      onNavigate(View.JUDGE, jurat);
+    }, 2000);
+  };
+
+  // Show full registration form if user proceeded from signup
+  if (showRegistrationForm) {
+    return (
+      <JuratRegistrationForm 
+        onSubmit={handleFormSubmit}
+        onCancel={() => {
+          setShowRegistrationForm(false);
+          setSignupName('');
+          setSignupEmail('');
+          setSignupPassword('');
+          setSignupConfirmPassword('');
+          setError('');
+        }}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex flex-col items-center justify-center p-4">
