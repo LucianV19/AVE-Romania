@@ -38,22 +38,15 @@ const Header: React.FC<HeaderProps> = ({ currentView, setView, currentUser, setC
                     </button>
                 ))}
             </div>
-            <button
-              onClick={() => {
-                const isDark = document.documentElement.classList.contains('dark');
-                if (isDark) {
-                  document.documentElement.classList.remove('dark');
-                  localStorage.setItem('theme', 'light');
-                } else {
-                  document.documentElement.classList.add('dark');
-                  localStorage.setItem('theme', 'dark');
-                }
-              }}
-              className="px-3 py-1.5 text-sm font-semibold rounded-full bg-gray-100 hover:bg-gray-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-ave-dark-blue dark:text-slate-100"
-              title="Comută tema"
+            <a
+              href="./formular-jurat/index.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-4 py-1.5 text-sm font-semibold rounded-full bg-ave-blue hover:bg-ave-dark-blue text-white transition-colors duration-300"
+              title="Formular de înscriere jurat"
             >
-              Tema
-            </button>
+              Înscriere Jurat
+            </a>
             <div className="hidden sm:flex items-center space-x-3">
                 <div className="w-9 h-9 rounded-full bg-ave-blue text-white flex items-center justify-center font-bold text-sm">
                    {currentUser.nume.charAt(0)}

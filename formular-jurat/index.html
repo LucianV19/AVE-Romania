@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ro">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Formular Înscriere Jurat - Gala Directorii Anului</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              'brand-bg': 'var(--color-bg-start, #100E1D)',
+              'brand-bg-end': 'var(--color-bg-end, #16213e)',
+              'brand-input-bg': 'var(--color-input-bg, #D7D2E8)',
+              'brand-text-dark': 'var(--color-text-dark, #2E234F)',
+              'brand-text-light': 'var(--color-text-light, #DCD8EC)',
+              'brand-button': 'var(--color-button, #575A89)',
+              'brand-white': 'var(--color-white, #FFFFFF)',
+            },
+            fontFamily: {
+              sans: ['Lato', 'sans-serif'],
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+      input:-webkit-autofill,
+      input:-webkit-autofill:hover,
+      input:-webkit-autofill:focus,
+      input:-webkit-autofill:active {
+          -webkit-box-shadow: 0 0 0 30px var(--color-input-bg, #D7D2E8) inset !important;
+          -webkit-text-fill-color: var(--color-text-dark, #2E234F) !important;
+          transition: background-color 5000s ease-in-out 0s;
+      }
+    </style>
+  </head>
+  <body class="bg-gradient-to-br from-brand-bg to-brand-bg-end font-sans text-brand-white">
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>
