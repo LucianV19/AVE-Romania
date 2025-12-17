@@ -40,14 +40,14 @@ const Step2_Organization: React.FC<Props> = ({ data, handleChange, handleDateCha
         {errors.functieInceputAn && <p className="text-red-400 text-sm mt-1">{errors.functieInceputAn}</p>}
       </div>
 
-      <InputField id="aniActivitateSistem" name="aniActivitateSistem" type="number" label="Câți ani de activitate ai în sistemul de educație din România (indiferent de rol)?" form={form} placeholder="Ex: 15" required />
+      <InputField id="aniActivitateSistem" name="aniActivitateSistem" type="number" label="Câți ani de activitate ai în sistemul de educație din România (indiferent de rol)?" form={form} placeholder="Ex: 15" required min={0} />
       
       <InputField as="select" id="modOcupareFunctie" name="modOcupareFunctie" label="Ocupi funcția de director/director adjunct printr-o decizie de:" form={form} options={MOD_OCUPARE_OPTIONS} placeholder="Alege o variantă" required />
       {data.modOcupareFunctie === 'Altă situație' && (
         <InputField id="modOcupareDetalii" name="modOcupareDetalii" label="Detaliați situația" form={form} placeholder="Descrieți pe scurt" required />
       )}
 
-      <InputField id="aniConducereAcumulati" name="aniConducereAcumulati" type="number" label="Câți ani de activitate de conducere (director sau director adjunct) ai acumulat până în prezent?" form={form} placeholder="Ex: 10" required />
+      <InputField id="aniConducereAcumulati" name="aniConducereAcumulati" type="number" label="Câți ani de activitate de conducere (director sau director adjunct) ai acumulat până în prezent?" form={form} placeholder="Ex: 10" required min={0} />
       </div>
     </div>
   );

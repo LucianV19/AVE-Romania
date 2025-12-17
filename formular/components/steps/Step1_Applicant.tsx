@@ -22,7 +22,17 @@ const Step1_Applicant: React.FC<Props> = ({ data, handleChange, handleBlur, erro
         <InputField id="confirmEmail" name="confirmEmail" label="Confirmare E-mail" type="email" form={form} placeholder="Repetă adresa de e-mail" required />
         <InputField id="nume" name="nume" label="Nume" form={form} placeholder="Popescu" required />
         <InputField id="prenume" name="prenume" label="Prenume" form={form} placeholder="Ion" required />
-        <InputField id="telefon" name="telefon" label="Telefon" type="tel" form={form} placeholder="07xx xxx xxx" required maxLength={10} />
+        <InputField 
+            id="telefon" 
+            name="telefon" 
+            label="Telefon" 
+            type="tel" 
+            form={form} 
+            placeholder="07xx xxx xxx" 
+            required 
+            minLength={10}
+            maxLength={10} 
+        />
       </div>
       </div>
     </div>

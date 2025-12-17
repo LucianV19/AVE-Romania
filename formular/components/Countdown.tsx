@@ -6,8 +6,26 @@ const Countdown: React.FC = () => {
 
   const compute = () => {
     const now = new Date();
-    const target = new Date(DEADLINE.year, DEADLINE.monthIndex, DEADLINE.day, DEADLINE.hour, DEADLINE.minute, 0);
-    const diff = target.getTime() - now.getTime();
+    let targetDate: Date;
+
+    try {
+        const savedDeadline = localStorage.getItem('gala_deadline_config');
+        if (savedDeadline) {
+            targetDate = new Date(savedDeadline);
+        } else {
+            targetDate = new Date(DEADLINE.year, DEADLINE.monthIndex, DEADLINE.day, DEADLINE.hour, DEADLINE.minute, 0);
+        }
+    } catch (e) {
+        targetDate = new Date(DEADLINE.year, DEADLINE.monthIndex, DEADLINE.day, DEADLINE.hour, DEADLINE.minute, 0);
+    }
+
+    const diff = targetDate.getTime() - now.getTime();
+    
+    if (diff <= 0) {
+        setTimeLeft({ days: 0, hours: 0 });
+        return;
+    }
+
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
     const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
     setTimeLeft({ days, hours });

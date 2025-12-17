@@ -10,6 +10,7 @@ interface JuratFormData {
   facebookProfile: string;
   otherProfile: string;
   recomandari: string;
+  foto_url?: string;
   acordGDPR: boolean;
   acordRegulament: boolean;
 }
@@ -29,6 +30,7 @@ const JuratRegistrationForm: React.FC<JuratRegistrationFormProps> = ({ onSubmit,
     facebookProfile: '',
     otherProfile: '',
     recomandari: '',
+    foto_url: '',
     acordGDPR: false,
     acordRegulament: false,
   });
@@ -46,6 +48,18 @@ const JuratRegistrationForm: React.FC<JuratRegistrationFormProps> = ({ onSubmit,
     'Calitatea educației',
     'Incluziune și diversitate',
   ];
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        setFormData(prev => ({ ...prev, foto_url: base64String }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
@@ -234,21 +248,38 @@ const JuratRegistrationForm: React.FC<JuratRegistrationFormProps> = ({ onSubmit,
             </div>
 
             {/* Funcție */}
-            <div className="mt-6">
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Funcție/Poziție *
-              </label>
-              <input
-                type="text"
-                name="functie"
-                value={formData.functie}
-                onChange={handleInputChange}
-                placeholder="ex: Director, Rector, Inspector Școlar..."
-                className={`w-full px-4 py-2 rounded-lg bg-slate-700/50 border ${
-                  errors.functie ? 'border-red-500' : 'border-slate-600'
-                } text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500`}
-              />
-              {errors.functie && <p className="text-red-400 text-sm mt-1">{errors.functie}</p>}
+            <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">
+                  Funcție/Poziție *
+                </label>
+                <input
+                  type="text"
+                  name="functie"
+                  value={formData.functie}
+                  onChange={handleInputChange}
+                  placeholder="ex: Director, Rector, Inspector Școlar..."
+                  className={`w-full px-4 py-2 rounded-lg bg-slate-700/50 border ${
+                    errors.functie ? 'border-red-500' : 'border-slate-600'
+                  } text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500`}
+                />
+                {errors.functie && <p className="text-red-400 text-sm mt-1">{errors.functie}</p>}
+              </div>
+
+              <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">Poză Profil (Opțional)</label>
+                  <div className="flex items-center gap-4">
+                      {formData.foto_url && (
+                          <img src={formData.foto_url} alt="Preview" className="w-10 h-10 rounded-full object-cover border border-slate-600" />
+                      )}
+                      <input 
+                          type="file" 
+                          accept="image/*" 
+                          onChange={handleFileChange} 
+                          className="w-full text-sm text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-purple-600 file:text-white hover:file:bg-purple-700" 
+                      />
+                  </div>
+              </div>
             </div>
           </div>
 

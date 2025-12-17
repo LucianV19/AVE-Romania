@@ -54,6 +54,7 @@ const Step4_Statistici: React.FC<Props> = ({ data, handleChange, errors, userNam
               form={form}
               placeholder="0"
               required
+              min={0}
             />
           ))}
         </div>
@@ -71,6 +72,7 @@ const Step4_Statistici: React.FC<Props> = ({ data, handleChange, errors, userNam
               form={form}
               placeholder="0"
               required
+              min={0}
             />
           ))}
         </div>

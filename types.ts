@@ -1,5 +1,7 @@
 // types.ts
 
+import { FormData as DirectorFormData } from './formular/types';
+
 export enum View {
   HOME = 'Acasă',
   JUDGE = 'Portal Jurat',
@@ -8,6 +10,8 @@ export enum View {
   ADMIN_ACCESS = 'Acces Administrator',
   LEADERBOARD = 'Clasament',
   DOCUMENTATION = 'Documentație',
+  FORMULAR = 'Formular Înscriere',
+  JURAT_FORM = 'Înscriere Jurat',
 }
 
 export enum UserRole {
@@ -41,6 +45,20 @@ export interface User {
 
 export interface Jurat extends User {
   rol: UserRole.JUDGE;
+  email?: string;
+  telefon?: string;
+  profesie?: string;
+  organizatie?: string;
+  experienta?: string;
+  domeniu_expertiza?: string;
+  ani_experienta?: number;
+  linkedin_url?: string;
+  facebook_url?: string;
+  instagram_url?: string;
+  motivatie?: string;
+  foto_url?: string;
+  password?: string;
+  stages?: string[]; // IDs of stages the judge is active in
 }
 
 export interface Admin extends User {
@@ -51,6 +69,7 @@ export interface Stage {
   id: string;
   nume: string;
   activ: boolean;
+  isCurrent?: boolean; // New property to mark the currently running stage
 }
 
 export interface Category {
@@ -64,7 +83,6 @@ export interface Criterion {
   categorieId: string;
   nume: string;
   descriere: string;
-  pondere: number; // e.g., 0.25 for 25%
   scorMin: number;
   scorMax: number;
 }
@@ -76,7 +94,6 @@ export interface Candidat {
   scoala: string;
   regiune: Regiune;
   categorieIds: string[];
-  pozaUrl: string;
   // Optional submission coming from external platform. Can be a URL to a file/page or raw HTML/text.
   submissionUrl?: string;
   submissionHtml?: string;
@@ -84,6 +101,7 @@ export interface Candidat {
   promotions?: { [fromStageId: string]: boolean };
   isWinner?: boolean;
   winningCategoryId?: string;
+  extendedData?: DirectorFormData;
 }
 
 export interface Assignment {

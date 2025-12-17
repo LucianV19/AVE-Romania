@@ -3,22 +3,32 @@ import { View } from '../types';
 
 interface HomeViewProps {
   onNavigate: (view: View) => void;
+  isDevMode: boolean;
+  setIsDevMode: (value: boolean) => void;
 }
 
-const HomeView: React.FC<HomeViewProps> = ({ onNavigate }) => {
+const HomeView: React.FC<HomeViewProps> = ({ onNavigate, isDevMode, setIsDevMode }) => {
   const handleDirectorClick = () => {
-    // Redirect to formular app
-    window.location.href = '/formular/';
+    // Navigate to Formular Director view
+    onNavigate(View.FORMULAR);
   };
 
   const handleJuratClick = () => {
     // Navigate to Jurat view with login/signup
-    onNavigate(View.JURAT_ACCESS);
+    if (isDevMode) {
+      onNavigate(View.JUDGE);
+    } else {
+      onNavigate(View.JURAT_ACCESS);
+    }
   };
 
   const handleAdminClick = () => {
     // Navigate to Admin access (login) page
-    onNavigate(View.ADMIN_ACCESS);
+    if (isDevMode) {
+      onNavigate(View.ADMIN);
+    } else {
+      onNavigate(View.ADMIN_ACCESS);
+    }
   };
 
   return (
@@ -117,36 +127,22 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate }) => {
         </button>
       </div>
 
-      {/* Info Section */}
-      <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl w-full">
-        <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-          <div className="text-4xl mb-3">✨</div>
-          <h3 className="text-lg font-semibold text-white mb-2">Transparent</h3>
-          <p className="text-slate-300 text-sm">
-            Sistem transparent și echitabil de evaluare a tuturor candidaților
-          </p>
-        </div>
 
-        <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-          <div className="text-4xl mb-3">🎯</div>
-          <h3 className="text-lg font-semibold text-white mb-2">Profesional</h3>
-          <p className="text-slate-300 text-sm">
-            Platformă profesională pentru gestionarea competițiilor și jurizării
-          </p>
-        </div>
-
-        <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-          <div className="text-4xl mb-3">🔒</div>
-          <h3 className="text-lg font-semibold text-white mb-2">Securizat</h3>
-          <p className="text-slate-300 text-sm">
-            Date și informații protejate cu siguranță maximă
-          </p>
-        </div>
-      </div>
 
       {/* Footer */}
       <div className="mt-16 text-center text-slate-400 text-sm">
         <p>© 2025 Gala Directorilor Anului. Toate drepturile rezervate.</p>
+      </div>
+
+      {/* Dev Mode Toggle */}
+      <div className="fixed bottom-4 right-4 flex items-center gap-2 bg-slate-800/80 p-3 rounded-full backdrop-blur-sm border border-slate-700">
+        <span className="text-xs font-bold text-slate-300">Acces Rapid (Dev)</span>
+        <button 
+            onClick={() => setIsDevMode(!isDevMode)}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-slate-900 ${isDevMode ? 'bg-green-500' : 'bg-slate-600'}`}
+        >
+            <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isDevMode ? 'translate-x-6' : 'translate-x-1'}`} />
+        </button>
       </div>
     </div>
   );

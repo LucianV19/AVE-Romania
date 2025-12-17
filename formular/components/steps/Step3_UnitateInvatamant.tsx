@@ -45,7 +45,7 @@ const Step3_UnitateInvatamant: React.FC<Props> = ({ data, handleChange, handleNi
         )}
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <InputField id="denumireUnitate" name="denumireUnitate" label="Denumirea unității de învățământ" form={form} placeholder="Ex: Liceul Teoretic 'Avram Iancu'" required />
         <InputField id="websiteUnitate" name="websiteUnitate" label="Website-ul unității (opțional)" type="url" form={form} placeholder="https://..." />
         <InputField as="select" id="judetUnitate" name="judetUnitate" label="Județul unității de învățământ" form={form} options={JUDETE} placeholder="Selectează județul" required />
@@ -137,7 +137,9 @@ const Step3_UnitateInvatamant: React.FC<Props> = ({ data, handleChange, handleNi
         {errors.arePersonalitateJuridica && <p className="text-red-400 text-sm mt-1">{errors.arePersonalitateJuridica}</p>}
       </fieldset>
       {data.arePersonalitateJuridica === 'nu' && (
-        <InputField id="unitateParinte" name="unitateParinte" label="Unitatea de care aparține" form={form} placeholder="Ex: Școala Gimnazială Nr. ..." required />
+        <div className="animate-fade-in">
+          <InputField id="unitateParinte" name="unitateParinte" label="Unitatea de care aparține" form={form} placeholder="Ex: Școala Gimnazială Nr. ..." required />
+        </div>
       )}
     </div>
   );

@@ -23,7 +23,6 @@ const WinnerCard: React.FC<{ candidate: Candidat; isBig?: boolean; category?: Ca
                 </div>
             )}
             <div className="p-6 flex-grow flex flex-col justify-center items-center">
-                <img src={candidate.pozaUrl} alt={candidate.nume} className={`${imageSizeClass} rounded-full object-cover mx-auto ring-4 ring-white dark:ring-slate-800 shadow-lg`}/>
                 <h4 className={`mt-4 font-bold text-ave-dark-blue dark:text-slate-100 ${nameSizeClass}`}>{candidate.nume}</h4>
                 <p className="text-sm text-gray-500 dark:text-slate-400">{candidate.scoala}</p>
             </div>

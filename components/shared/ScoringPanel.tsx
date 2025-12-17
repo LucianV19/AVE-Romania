@@ -28,47 +28,11 @@ const ScoringPanel: React.FC<ScoringPanelProps> = ({ assignment, candidate, crit
     const relevantCriteria = criteria.filter(c => c.etapaId === assignment.etapaId && c.categorieId === assignment.categorieId);
     
     const finalScore = useMemo(() => {
-        const totalWeight = relevantCriteria.reduce((acc, crit) => {
-            // Calculează ponderea totală doar pentru criteriile care au note
-            return acc + (localScores[crit.id] !== undefined ? crit.pondere : 0);
-        }, 0);
-
-        if (totalWeight === 0) return 0; // Dacă nu există note, scorul final este 0
-
         return relevantCriteria.reduce((acc, crit) => {
-            // Folosește doar scorurile existente în calcul
             const score = localScores[crit.id];
-            return acc + (score !== undefined ? score * crit.pondere : 0);
+            return acc + (score !== undefined ? score : 0);
         }, 0);
     }, [localScores, relevantCriteria]);
-
-    const averageScores = useMemo(() => {
-        const otherFinalizedAssignments = allAssignments.filter(a => 
-            a.candidatId === candidate.id && 
-            a.etapaId === assignment.etapaId && 
-            a.categorieId === assignment.categorieId &&
-            a.status === Status.FINALIZAT &&
-            a.id !== assignment.id
-        );
-
-        if (otherFinalizedAssignments.length === 0) {
-            return null;
-        }
-
-        const avgScores: Record<string, number> = {};
-        relevantCriteria.forEach(criterion => {
-            const scoresForCriterion = otherFinalizedAssignments
-                .map(a => a.scoruri[criterion.id])
-                .filter(score => typeof score === 'number') as number[];
-
-            if (scoresForCriterion.length > 0) {
-                const sum = scoresForCriterion.reduce((acc, score) => acc + score, 0);
-                avgScores[criterion.id] = sum / scoresForCriterion.length;
-            }
-        });
-
-        return avgScores;
-    }, [allAssignments, candidate.id, assignment.etapaId, assignment.id, relevantCriteria, assignment.categorieId]);
 
     const handleScoreChange = (criterionId: string, score: number) => {
         setLocalScores(prev => ({ ...prev, [criterionId]: score }));
@@ -130,17 +94,12 @@ const ScoringPanel: React.FC<ScoringPanelProps> = ({ assignment, candidate, crit
                     {relevantCriteria.map(criterion => (
                         <div key={criterion.id} className="overflow-x-hidden w-full">
                             <div className="flex items-center gap-2 flex-wrap">
-                                <h4 className="font-bold text-gray-800 dark:text-slate-200 truncate">{criterion.nume} <span className="font-normal text-gray-500 dark:text-slate-400">({(criterion.pondere * 100)}%)</span></h4>
-                                <Tooltip content="Ponderea acestui criteriu în calculul scorului final. Totalul ponderilor pentru o categorie/etapă trebuie să fie 100%.">
-                                    <InformationCircleIcon className="w-4 h-4 text-gray-400 dark:text-slate-500 cursor-help" />
-                                </Tooltip>
+                                <h4 className="font-bold text-gray-800 dark:text-slate-200 truncate">{criterion.nume}</h4>
                             </div>
                             <p className="text-sm text-gray-600 dark:text-slate-400 mt-1 mb-2">{criterion.descriere}</p>
                             
-                            {averageScores && averageScores[criterion.id] !== undefined && (
-                                <div className="mb-3 flex items-center text-xs text-gray-500 dark:text-slate-400 bg-gray-100 dark:bg-slate-700/50 p-2 rounded-md">
-                                    <UserGroupIcon className="w-4 h-4 mr-2 flex-shrink-0" />
-                                    <span>Media evaluărilor finalizate: <span className="font-bold text-gray-700 dark:text-slate-200">{averageScores[criterion.id].toFixed(2)}</span></span>
+                            {isAdmin && (
+                                <div className="mt-2 text-xs text-gray-500 flex items-center">
                                     <Tooltip content="Acesta este scorul mediu acordat de alți jurați care au finalizat evaluarea pentru acest candidat, pentru același criteriu. Este afișat doar în scop informativ.">
                                         <InformationCircleIcon className="w-4 h-4 text-gray-400 dark:text-slate-500 cursor-help ml-2" />
                                     </Tooltip>
@@ -230,17 +189,7 @@ const ScoringPanel: React.FC<ScoringPanelProps> = ({ assignment, candidate, crit
                                             />
                                         </div>
                                     </div>
-                                    <input
-                                        type="range"
-                                        min={criterion.scorMin}
-                                        max={criterion.scorMax}
-                                        value={localScores[criterion.id] ?? 0}
-                                        onChange={e => handleScoreChange(criterion.id, parseInt(e.target.value, 10))}
-                                        disabled={isReadOnly}
-                                        className="w-full h-4 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-slate-600 accent-ave-blue touch-manipulation"
-                                        aria-label={`Score slider for ${criterion.nume}`}
-                                        style={{ touchAction: 'manipulation' }}
-                                    />
+
                                 </div>
                                 <div className="relative w-full">
                                     <ChatBubbleLeftIcon className="absolute left-4 top-4 text-gray-400 dark:text-slate-400 w-6 h-6"/>

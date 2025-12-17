@@ -102,6 +102,21 @@ const App: React.FC = () => {
     }
   }, []);
 
+  const [deadlineLabel, setDeadlineLabel] = useState(DEADLINE_LABEL);
+
+  useEffect(() => {
+    try {
+        const savedDeadline = localStorage.getItem('gala_deadline_config');
+        if (savedDeadline) {
+            const date = new Date(savedDeadline);
+            // Format: "20 iulie 2026, ora 23:59"
+            const months = ["ianuarie", "februarie", "martie", "aprilie", "mai", "iunie", "iulie", "august", "septembrie", "octombrie", "noiembrie", "decembrie"];
+            const formatted = `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}, ora ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+            setDeadlineLabel(formatted);
+        }
+    } catch {}
+  }, []);
+
   useEffect(() => {
     if (scrollToElementId) return;
     const titleElement = stepContainerRef.current?.querySelector('h2');
@@ -172,8 +187,10 @@ const App: React.FC = () => {
     if (type === 'tel') {
       value = value.toString().replace(/[^0-9]/g, '').slice(0, 10);
     }
+
     if (type === 'number') {
-      value = value.toString().replace(/[^0-9]/g, '');
+      const numVal = parseInt(value.toString());
+      if (numVal < 0) value = '0';
     }
 
     const nameParts = name.split('.');
@@ -401,7 +418,15 @@ const App: React.FC = () => {
       case 4:
         if (Object.values(formData.categorii).every(v => !v)) newErrors.categorii = 'Selectați cel puțin o categorie.';
         break;
-      case 8:
+      case 6:
+        if (formData.recomandari.length < 3) {
+           newErrors.recomandari = 'Vă rugăm să adăugați cel puțin 3 recomandări (persoane).';
+        }
+        if (!formData.organizatiiReferinta || formData.organizatiiReferinta.length < 1) {
+           newErrors.organizatiiReferinta = 'Vă rugăm să adăugați cel puțin o organizație de referință.';
+        }
+        break;
+      case 7:
         if (!formData.acordGDPR || !formData.acordRegulament) newErrors.acordRegulament = 'Ambele acorduri sunt necesare.';
         break;
     }
@@ -458,11 +483,12 @@ const App: React.FC = () => {
       await new Promise(resolve => setTimeout(resolve, 1500));
       console.log('Form data submitted:', formData);
       trackEvent('form_submit', { step: currentStep });
+      localStorage.setItem('galaFormData', JSON.stringify(formData));
+      localStorage.setItem('galaSubmissionPending', 'true');
       setSubmissionStatus('success');
       await new Promise(resolve => setTimeout(resolve, 1000));
       setIsSubmitting(false);
       setIsSubmitted(true);
-      localStorage.removeItem('galaFormData');
     }
   };
 
@@ -486,11 +512,24 @@ const App: React.FC = () => {
                 </div>
                 <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-brand-white mb-4">Înscrie-te acum la Premiile pentru Directorii Anului 2026!</h1>
                 <div className="text-sm sm:text-base text-brand-text-light max-w-3xl mx-auto space-y-2">
-                    <p>Termen limită de înscriere pentru directorii și directorii adjuncți ai unităților de învățământ - {DEADLINE_LABEL}.</p>
-                    <p className="text-xs sm:text-sm">Timp estimat pentru completare: ~2 ore. Vă recomandăm să folosiți opțiunea <strong className="text-brand-white">"Salvează Progresul"</strong>. Pentru întrebări, ne puteți contacta la <a href="mailto:contact@example.com" className="text-brand-white underline">contact@example.com</a>.</p>
+                    <p>Termen limită de înscriere pentru directorii și directorii adjuncți ai unităților de învățământ - {deadlineLabel}.</p>
+                    <div className="bg-white/10 p-4 rounded-md text-left mt-4 border border-white/20">
+                      <h3 className="text-lg font-bold text-brand-white mb-2">Indicații de completare a formularului de înscriere</h3>
+                      <p className="mb-2">Completarea formularului durează aproximativ <strong className="text-brand-white">2 ore</strong> și are în vedere o serie de informații și documente suplimentare, care necesită pregătire în prealabil.</p>
+                      <p className="mb-4">Poți consulta <strong>Regulamentul Competiției</strong> <a href="#" className="text-blue-400 underline hover:text-blue-300">AICI</a>.</p>
+                      
+                      <h4 className="text-brand-white font-bold mb-2">Bine de știut:</h4>
+                      <ul className="list-disc list-outside ml-5 space-y-2 text-sm">
+                        <li>Formularul este structurat pe 3 secțiuni și mai multe pagini. Apăsând butonul „Salvează progresul” de la finalul fiecărei pagini, ceea ce ai completat deja va fi transmis pe e-mailul confirmat în pagina de deschidere.</li>
+                        <li>Poți continua completarea formularului oricând, accesând din nou linkul de înscriere pe care îl primești pe e-mail și alegând butonul „Continuă editarea”.</li>
+                        <li>Te poți înscrie pentru maximum 2 dintre cele 3 categorii, respectiv Inovare, Egalitate de Șanse și Antreprenoriat.</li>
+                        <li>În cazul în care întâmpini dificultăți în completarea formularului sau dacă te putem sprijini cu detalii suplimentare, în spatele adresei de e-mail <a href="mailto:gala@ave-romania.ro" className="text-blue-400 underline">gala@ave-romania.ro</a> este cineva pregătit să îți răspundă în maximum 3 zile lucrătoare.</li>
+                        <li>Toate întrebările care au semnul <span className="text-red-400">*</span> sunt obligatorii.</li>
+                      </ul>
+                    </div>
                 </div>
                 <div className="mt-6 flex items-center justify-center gap-8">
-                  {/* Countdown component removed – module not found */}
+                  <Countdown />
                 </div>
              </header>
             
