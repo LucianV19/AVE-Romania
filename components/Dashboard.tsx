@@ -158,7 +158,7 @@ const Dashboard: React.FC<DashboardProps> = ({
              <ClipboardDocumentCheckIcon className="w-5 h-5 text-ave-blue"/> Pipeline Jurizare
           </h4>
           <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-slate-700 overflow-x-auto">
-              <div className="flex items-center min-w-max gap-4">
+              <div className="flex items-center w-full gap-4">
                   {assignmentsByStage.filter(s => s.id !== 'etapa_finala').map((stage, idx, arr) => {
                       const isActive = activeStage?.id === stage.id;
                       const isPast = arr.findIndex(s => s.id === activeStage?.id) > idx;
@@ -168,8 +168,8 @@ const Dashboard: React.FC<DashboardProps> = ({
                               <div 
                                   onClick={() => { setActiveTab('assignments'); setAssignmentViewMode('matrix'); setAssignmentStageId(stage.id); }}
                                   className={`
-                                      relative flex flex-col items-center justify-center p-4 rounded-xl w-48 transition-all cursor-pointer border-2
-                                      ${isActive ? 'border-ave-blue bg-blue-50 dark:bg-blue-900/20 scale-105 shadow-md' : 'border-transparent bg-gray-50 dark:bg-slate-700/30 hover:bg-gray-100'}
+                                      relative flex flex-col items-center justify-center p-4 rounded-xl min-w-[180px] flex-1 transition-all cursor-pointer border-2
+                                      ${isActive ? 'border-ave-blue bg-blue-50 dark:bg-blue-900/20 scale-105 shadow-md z-10' : 'border-transparent bg-gray-50 dark:bg-slate-700/30 hover:bg-gray-100'}
                                       ${isPast ? 'opacity-70' : ''}
                                   `}
                               >
