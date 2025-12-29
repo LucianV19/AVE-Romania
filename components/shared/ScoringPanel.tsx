@@ -24,6 +24,7 @@ const ScoringPanel: React.FC<ScoringPanelProps> = ({ assignment, candidate, crit
     const [isActionsOpen, setIsActionsOpen] = useState(false);
     const [isCompact, setIsCompact] = useState(false);
     const [isFullHeight, setIsFullHeight] = useState(false);
+    const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'idle'>('idle');
     const lastAutoSavedRef = useRef<string>('');
 
     const hasChanges = useMemo(() => {
@@ -116,6 +117,7 @@ const ScoringPanel: React.FC<ScoringPanelProps> = ({ assignment, candidate, crit
         const payload = JSON.stringify({ id: assignment.id, status: assignment.status, localScores, localObservations, finalScore });
         if (payload === lastAutoSavedRef.current) return;
 
+        setSaveStatus('saving');
         const t = window.setTimeout(() => {
             lastAutoSavedRef.current = payload;
             onSave({
@@ -126,6 +128,8 @@ const ScoringPanel: React.FC<ScoringPanelProps> = ({ assignment, candidate, crit
                 scorFinal: finalScore,
                 lastModified: new Date(),
             });
+            setSaveStatus('saved');
+            setTimeout(() => setSaveStatus('idle'), 2000);
         }, 900);
 
         return () => window.clearTimeout(t);
@@ -456,10 +460,26 @@ const ScoringPanel: React.FC<ScoringPanelProps> = ({ assignment, candidate, crit
                     })}
                 </div>
                  <footer className="p-4 sm:p-5 border-t dark:border-slate-700 sticky bottom-0 bg-white dark:bg-slate-800 z-10 flex flex-col gap-4 flex-shrink-0 w-full overflow-x-hidden" style={{ paddingBottom: 'env(safe-area-inset-bottom, 16px)' }}>
-                    <div className="flex items-center justify-between gap-2">
-                        <span className="text-sm sm:text-base text-gray-600 dark:text-slate-400 flex-shrink-0">Scor Final:</span>
-                        <p className="text-2xl sm:text-4xl font-extrabold text-ave-blue flex-shrink-0">{finalScore.toFixed(2)}</p>
+                    <div className="flex flex-col gap-2">
+                        <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2">
+                                <span className="text-sm text-gray-500 dark:text-slate-400 font-medium">Progres: {relevantCriteria.length - missingCount}/{relevantCriteria.length}</span>
+                                {saveStatus === 'saving' && <span className="text-xs text-blue-500 font-semibold animate-pulse ml-2">Se salvează...</span>}
+                                {saveStatus === 'saved' && <span className="text-xs text-green-500 font-semibold ml-2">Salvat automat</span>}
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <span className="text-sm sm:text-base text-gray-600 dark:text-slate-400 flex-shrink-0">Scor Final:</span>
+                                <p className="text-2xl sm:text-4xl font-extrabold text-ave-blue flex-shrink-0">{finalScore.toFixed(2)}</p>
+                            </div>
+                        </div>
+                        <div className="w-full bg-gray-100 dark:bg-slate-700 rounded-full h-1.5 overflow-hidden">
+                            <div 
+                                className="bg-ave-blue h-full rounded-full transition-all duration-500 ease-out" 
+                                style={{ width: `${((relevantCriteria.length - missingCount) / relevantCriteria.length) * 100}%` }}
+                            ></div>
+                        </div>
                     </div>
+                    
                     {isReadOnly ? (
                          <p className="text-base font-semibold text-center text-green-700 bg-green-100 dark:text-green-300 dark:bg-green-900/50 px-4 py-3 rounded-xl">Evaluare Finalizată</p>
                     ) : isAdmin ? (

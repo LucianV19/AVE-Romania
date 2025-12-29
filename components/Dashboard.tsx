@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Candidat, Jurat, Assignment, Status, Category, Stage } from '../types';
+import { Candidat, Jurat, Assignment, Status, Category, Stage, AuditLog } from '../types';
 import Card from './shared/Card';
 import { ChartPieIcon, UserGroupIcon, ClipboardDocumentCheckIcon, CheckBadgeIcon, ClockIcon, ChevronRightIcon } from './shared/icons';
 
@@ -9,6 +9,7 @@ interface DashboardProps {
   assignments: Assignment[];
   stages: Stage[];
   categories: Category[];
+  auditLogs: AuditLog[];
   setActiveTab: (tab: 'dashboard' | 'config' | 'assignments' | 'audit') => void;
   setActiveSubTab: (subTab: 'structure' | 'candidates' | 'judges') => void;
   setJudgeSearch: (search: string) => void;
@@ -21,7 +22,7 @@ interface DashboardProps {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ 
-    candidates, judges, assignments, stages, categories, 
+    candidates, judges, assignments, stages, categories, auditLogs,
     setActiveTab, setActiveSubTab, setJudgeSearch,
     setAssignmentViewMode, setAssignmentStageId, setAssignmentFocusType, setAssignmentFocusId,
     setAssignmentStatusFilter, onNavigateToCategory
@@ -85,6 +86,18 @@ const Dashboard: React.FC<DashboardProps> = ({
           count: candidates.filter(c => c.categorieIds.includes(cat.id)).length
       }));
   }, [categories, candidates]);
+
+  const categoryScores = useMemo(() => {
+      return categories.map(cat => {
+          const catAssignments = assignments.filter(a => a.categorieId === cat.id && a.status === Status.FINALIZAT && typeof a.scorFinal === 'number');
+          const avg = catAssignments.length > 0
+              ? catAssignments.reduce((sum, a) => sum + (a.scorFinal || 0), 0) / catAssignments.length
+              : 0;
+          return { name: cat.nume, avg };
+      });
+  }, [categories, assignments]);
+
+  const recentActivity = auditLogs.slice(0, 5);
 
 
   return (
@@ -288,6 +301,56 @@ const Dashboard: React.FC<DashboardProps> = ({
             </div>
          </Card>
        )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Recent Activity */}
+        <Card className="p-6">
+            <div className="flex justify-between items-center mb-4">
+                <h4 className="font-bold text-lg text-gray-800 dark:text-slate-100">Activitate Recentă</h4>
+                <button onClick={() => setActiveTab('audit')} className="text-xs font-semibold text-ave-blue hover:underline">Vezi tot</button>
+            </div>
+            <div className="space-y-0">
+                {recentActivity.length === 0 ? (
+                    <p className="text-sm text-gray-500 dark:text-slate-400">Nicio activitate înregistrată.</p>
+                ) : (
+                    recentActivity.map((log, idx) => (
+                        <div key={log.id} className={`flex flex-col py-3 ${idx !== recentActivity.length - 1 ? 'border-b border-gray-100 dark:border-slate-700' : ''}`}>
+                            <div className="flex justify-between items-start">
+                                <span className="font-semibold text-sm text-gray-800 dark:text-slate-200">{log.actiune}</span>
+                                <span className="text-[10px] text-gray-400 whitespace-nowrap ml-2">{log.timestamp.toLocaleString('ro-RO')}</span>
+                            </div>
+                            <span className="text-xs text-gray-500 dark:text-slate-400 mt-1">{log.detalii.motiv || '-'}</span>
+                            <span className="text-[10px] text-gray-400 mt-0.5">Admin: {log.adminId}</span>
+                        </div>
+                    ))
+                )}
+            </div>
+        </Card>
+
+        {/* Score Distribution */}
+        <Card className="p-6">
+            <h4 className="font-bold text-lg mb-4 text-gray-800 dark:text-slate-100">Medie Scoruri pe Categorie</h4>
+            <div className="space-y-4">
+                {categoryScores.map((cat, idx) => (
+                    <div key={idx} className="space-y-1">
+                        <div className="flex justify-between text-xs font-medium text-gray-600 dark:text-slate-300">
+                            <span>{cat.name}</span>
+                            <span>{cat.avg.toFixed(2)}</span>
+                        </div>
+                        <div className="w-full bg-gray-100 dark:bg-slate-700 rounded-full h-2 overflow-hidden">
+                            <div 
+                                className={`h-full rounded-full ${['bg-blue-500', 'bg-purple-500', 'bg-pink-500'][idx % 3]}`} 
+                                style={{ width: `${Math.min(100, (cat.avg / 30) * 100)}%` }}
+                            ></div>
+                        </div>
+                    </div>
+                ))}
+                {categoryScores.every(c => c.avg === 0) && (
+                    <p className="text-sm text-gray-500 dark:text-slate-400 text-center py-4">Nu există suficiente date pentru statistici.</p>
+                )}
+            </div>
+        </Card>
+      </div>
     </div>
   );
 };

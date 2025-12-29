@@ -11,8 +11,10 @@ import FormularApp from './formular/App';
 import JuratFormApp from './formular-jurat/App';
 import { View, Candidat, Jurat, Assignment, AuditLog, Stage, Category, Criterion, User, UserRole, Admin, DocumentationContent, Regiune } from './types';
 import { CANDIDATI, JURATI, ASSIGNMENTS, AUDIT_LOGS, STAGES, CATEGORIES, CRITERIA, ADMINI, DEFAULT_DOCUMENTATION_CONTENT } from './constants';
+import { useNotifications } from './components/contexts/NotificationContext';
 
 const App: React.FC = () => {
+  const { notify } = useNotifications();
   // Combined user list for dropdown
   const ALL_USERS: User[] = [...JURATI, ...ADMINI];
 
@@ -203,6 +205,8 @@ const App: React.FC = () => {
                 motiv: 'Candidat adăugat din formularul de înscriere'
               }
             });
+            
+            notify('Candidat Nou', `S-a înscris candidatul ${newCandidate.nume}`, 'success');
 
             localStorage.removeItem('galaSubmissionPending');
             localStorage.removeItem('galaFormData');
@@ -263,6 +267,7 @@ const App: React.FC = () => {
                         motiv: `S-au înregistrat ${addedCount} jurați noi din formular.`
                     }
                 });
+                notify('Jurat Nou', `S-au înregistrat ${addedCount} jurați noi`, 'success');
                 // Note: We don't clear juryRegistrations to keep a record, 
                 // but we rely on ID check to avoid duplicates in state.
                 // However, on fresh load, 'judges' state comes from localStorage['judges'] + constants.

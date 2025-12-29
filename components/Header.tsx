@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, User } from '../types';
 import { MenuIcon, XMarkIcon, HomeIcon } from './shared/icons';
+import { useNotifications } from './contexts/NotificationContext';
 
 interface HeaderProps {
   currentView: View;
@@ -14,6 +15,8 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ currentView, setView, currentUser, setCurrentUser, allUsers, isDevMode, setIsDevMode }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const { notifications, unreadCount, markAllAsRead } = useNotifications();
   const views: View[] = [View.JUDGE, View.LEADERBOARD, View.ADMIN, View.DOCUMENTATION];
 
   const handleSetView = (view: View) => {
@@ -56,6 +59,59 @@ const Header: React.FC<HeaderProps> = ({ currentView, setView, currentUser, setC
 
           {/* Desktop Actions */}
           <div className="hidden lg:flex items-center space-x-4">
+             {/* Notification Bell */}
+             <div className="relative">
+                <button 
+                    onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
+                    className="p-2 rounded-full text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800 relative focus:outline-none"
+                    title="Notificări"
+                >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                    </svg>
+                    {unreadCount > 0 && (
+                        <span className="absolute top-1 right-1 bg-red-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center border-2 border-white dark:border-slate-900">
+                            {unreadCount}
+                        </span>
+                    )}
+                </button>
+
+                {isNotificationsOpen && (
+                    <>
+                        <div className="fixed inset-0 z-40" onClick={() => setIsNotificationsOpen(false)}></div>
+                        <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl shadow-xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                            <div className="p-3 border-b border-gray-100 dark:border-slate-800 flex justify-between items-center bg-gray-50 dark:bg-slate-800/50">
+                                <h3 className="font-bold text-sm text-gray-800 dark:text-slate-200">Notificări</h3>
+                                {unreadCount > 0 && (
+                                    <button onClick={markAllAsRead} className="text-xs text-ave-blue hover:underline font-medium">Marchează citite</button>
+                                )}
+                            </div>
+                            <div className="max-h-80 overflow-y-auto">
+                                {notifications.length === 0 ? (
+                                    <div className="p-8 text-center flex flex-col items-center text-gray-500 dark:text-slate-400">
+                                        <span className="text-2xl mb-2">🔕</span>
+                                        <p className="text-sm">Nu ai notificări recente.</p>
+                                    </div>
+                                ) : (
+                                    notifications.slice(0, 10).map(n => (
+                                        <div key={n.id} className={`p-3 border-b border-gray-50 dark:border-slate-800/50 hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors ${!n.read ? 'bg-blue-50/60 dark:bg-blue-900/10' : ''}`}>
+                                            <div className="flex justify-between items-start mb-1">
+                                                <p className={`text-sm ${!n.read ? 'font-bold text-ave-dark-blue dark:text-slate-100' : 'font-semibold text-gray-700 dark:text-slate-300'}`}>{n.title}</p>
+                                                <span className="text-[10px] text-gray-400 whitespace-nowrap ml-2">{n.timestamp.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                                            </div>
+                                            <p className="text-xs text-gray-600 dark:text-slate-400 line-clamp-2">{n.message}</p>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                            <div className="p-2 bg-gray-50 dark:bg-slate-800/50 border-t border-gray-100 dark:border-slate-800 text-center">
+                                <button onClick={() => setIsNotificationsOpen(false)} className="text-xs text-gray-500 hover:text-gray-800 dark:hover:text-slate-200">Închide</button>
+                            </div>
+                        </div>
+                    </>
+                )}
+             </div>
+
              <div className="flex items-center space-x-2">
                 <button
                     onClick={() => handleSetView(View.FORMULAR)}

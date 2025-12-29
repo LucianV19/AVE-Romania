@@ -3153,6 +3153,11 @@ const AuditAndExport: React.FC<AdminViewProps> = (props) => {
     const { auditLogs } = props;
     const [searchTerm, setSearchTerm] = useState('');
     const debouncedSearchTerm = useDebounce(searchTerm, 300);
+    const [exportFilters, setExportFilters] = useState({
+        stageId: 'all',
+        categoryId: 'all',
+        status: 'all'
+    });
 
     const filteredLogs = useMemo(() => {
         if (!debouncedSearchTerm) return auditLogs;
@@ -3245,6 +3250,14 @@ const AuditAndExport: React.FC<AdminViewProps> = (props) => {
 
     const exportAssignmentsToCsv = () => {
         const { assignments, candidates, judges, stages, categories, criteria } = props;
+        
+        const filteredAssignments = assignments.filter(a => {
+            if (exportFilters.stageId !== 'all' && a.etapaId !== exportFilters.stageId) return false;
+            if (exportFilters.categoryId !== 'all' && a.categorieId !== exportFilters.categoryId) return false;
+            if (exportFilters.status !== 'all' && a.status !== exportFilters.status) return false;
+            return true;
+        });
+
         const escapeCsvCell = (cellData: string | number | undefined | null) => {
             if (cellData === undefined || cellData === null) return '';
             const stringData = String(cellData);
@@ -3274,7 +3287,7 @@ const AuditAndExport: React.FC<AdminViewProps> = (props) => {
         ];
         const csvRows = [headers.join(',')];
 
-        assignments.forEach(a => {
+        filteredAssignments.forEach(a => {
             const cand = candidates.find(c => c.id === a.candidatId);
             const judge = judges.find(j => j.id === a.juratId);
             const stage = stages.find(s => s.id === a.etapaId);
@@ -3307,7 +3320,7 @@ const AuditAndExport: React.FC<AdminViewProps> = (props) => {
         const link = document.createElement('a');
         const url = URL.createObjectURL(blob);
         link.setAttribute('href', url);
-        link.setAttribute('download', 'evaluari.csv');
+        link.setAttribute('download', `evaluari_${exportFilters.stageId}_${new Date().toISOString().split('T')[0]}.csv`);
         link.style.visibility = 'hidden';
         document.body.appendChild(link);
         link.click();
@@ -3379,6 +3392,40 @@ const AuditAndExport: React.FC<AdminViewProps> = (props) => {
                     <button onClick={exportResultsToCsv} className="flex items-center space-x-2 text-sm font-semibold bg-green-100 text-green-800 hover:bg-green-200 dark:bg-green-900/50 dark:text-green-300 dark:hover:bg-green-900 px-3 py-1.5 rounded-lg"><TableIcon className="w-4 h-4" /><span>Rezultate (CSV)</span></button>
                 </div>
             </div>
+
+            <div className="mb-4 p-3 bg-gray-50 dark:bg-slate-800 rounded-lg flex flex-wrap gap-3 items-center">
+                <span className="text-xs font-bold uppercase text-gray-500 flex items-center">Filtre Export:</span>
+                
+                <select 
+                    value={exportFilters.stageId}
+                    onChange={e => setExportFilters(prev => ({ ...prev, stageId: e.target.value }))}
+                    className="text-xs border-gray-300 rounded py-1 pl-2 pr-6 dark:bg-slate-700 dark:border-slate-600"
+                >
+                    <option value="all">Toate Etapele</option>
+                    {props.stages.map(s => <option key={s.id} value={s.id}>{s.nume}</option>)}
+                </select>
+
+                <select 
+                    value={exportFilters.categoryId}
+                    onChange={e => setExportFilters(prev => ({ ...prev, categoryId: e.target.value }))}
+                    className="text-xs border-gray-300 rounded py-1 pl-2 pr-6 dark:bg-slate-700 dark:border-slate-600"
+                >
+                    <option value="all">Toate Categoriile</option>
+                    {props.categories.map(c => <option key={c.id} value={c.id}>{c.nume}</option>)}
+                </select>
+
+                <select 
+                    value={exportFilters.status}
+                    onChange={e => setExportFilters(prev => ({ ...prev, status: e.target.value as any }))}
+                    className="text-xs border-gray-300 rounded py-1 pl-2 pr-6 dark:bg-slate-700 dark:border-slate-600"
+                >
+                    <option value="all">Toate Statusurile</option>
+                    <option value={Status.FINALIZAT}>Finalizat</option>
+                    <option value={Status.IN_CURS}>În Curs</option>
+                    <option value={Status.NEINCEPUT}>Neînceput</option>
+                </select>
+            </div>
+
              <div className="relative mb-4">
                 <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-400 w-5 h-5" />
                 <input
