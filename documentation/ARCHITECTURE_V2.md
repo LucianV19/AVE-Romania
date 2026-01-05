@@ -170,4 +170,3 @@ export const syncToMailchimp = async (data: ContactData, listId: string) => {
    ```
 4. **Admin Control:** Un switch simplu în header-ul sau dashboard-ul de admin.
 
-Această abordare asigură că interfața se actualizează instantaneu (React reactivity) fără refresh.

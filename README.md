@@ -1,117 +1,103 @@
-# Platformă Jurizare - Gala Directorii Anului
+# Platformă Jurizare - Gala Directorii Anului (v2.2)
 
-Platformă completă pentru jurizare în modul DEMO (fără bază de date).
+Platformă completă pentru gestionarea procesului de jurizare, înscrieri și evaluare pentru Gala Directorii Anului.
 
-## Pornire Rapidă
+## 🚀 Funcționalități Cheie
 
-### Development Mode
+### 🏠 Portal Unificat
+- **Home Page**: 3 puncte de intrare dedicate (Director, Jurat, Administrator).
+- **Design Modern**: Interfață responsive, temă dark/light, accesibilă.
 
-Pentru development, trebuie să rulezi **2 servere separat**:
+### 🎨 UI & UX
+- **UI Kit**: Componente standardizate (`components/ui`) pentru consistență vizuală (Button, Badge, Alert, Input).
+- **Notificări**: Sistem centralizat de notificări tip Toast (`NotificationContext`).
+- **Responsive**: Optimizare completă pentru dispozitive mobile și tablete.
 
-#### 1. Platforma Principală
+### 🔐 Panou Administrator
+- **Dashboard Avansat**: Widget-uri pentru Activitate Recentă, Evaluări la Risc, Distribuție Scoruri.
+- **Management Complet**:
+  - Gestionare candidați, jurați și asignări.
+  - Configurare etape și categorii.
+  - Audit Logs pentru trasabilitate.
+- **Export Date**: Filtre avansate (Etapă, Categorie, Status) și export CSV.
+
+### ⚖️ Portal Jurat
+- **Evaluare Simplificată**: Listă clară de asignări cu statusuri vizuale.
+- **Scoring Panel**:
+  - Auto-save cu feedback vizual (Saving/Saved).
+  - Progress bar pentru completarea criteriilor.
+  - Confidențialitate (ascundere medii globale).
+
+### 📝 Formulare
+- **Înscriere Director**: Formular complex integrat (`formular/`).
+- **Înscriere Jurat**: Aplicație dedicată pentru onboarding jurați (`formular-jurat/`).
+
+---
+
+## 📂 Structură Proiect
+
+```bash
+AVE-Romania-V3/
+├── components/          # Componente React
+│   ├── ui/              # UI Kit (reutilizabile)
+│   ├── shared/          # Componente partajate (CandidateCard, ScoringPanel)
+│   └── ...              # Vederi (AdminView, JudgeView, Dashboard)
+├── documentation/       # Documentație tehnică (.md)
+│   ├── ARCHITECTURE_V2.md
+│   └── INTEGRATION_GUIDE.md
+
+├── formular/            # Aplicația de înscriere directori (integrată)
+├── formular-jurat/      # Aplicația de înscriere jurați (standalone)
+└── supabase/            # Migrări și configurări SQL
+```
+
+## 🛠️ Pornire Rapidă
+
+### Cerințe
+- Node.js (v18+)
+- NPM
+
+### Instalare și Rulare
+
+1. **Platforma Principală**
 ```bash
 npm install
 npm run dev
 ```
-Accesează: `http://localhost:5173`
+Accesează: `http://localhost:3000` sau orice alt port disponibil
 
-#### 2. Formularul de Înscriere Jurat
+2. **Formular Jurat (Development)**
+Dacă lucrezi la modulul de înscriere jurați:
 ```bash
 cd formular-jurat
 npm install
 npm run dev
 ```
-Accesează: `http://localhost:5174` (sau portul afișat în terminal)
 
-### Production Build
-
-Pentru a genera build-ul final (toate fișierele în `dist/`):
+### Build pentru Producție
 
 ```bash
-npm install
 npm run build
 ```
+Comanda va construi atât platforma principală cât și formularul de jurați, integrându-le în folderul `dist/`.
 
-Acest command va:
-1. Construi platforma principală
-2. Construi formularul jurat
-3. Copia formularul în `dist/formular-jurat/`
+---
 
-După build, poți servi întregul site cu:
-```bash
-npm run preview
-```
+## 📚 Documentație
 
-## Structură
+Toată documentația tehnică a fost mutată în folderul `documentation/`:
+- **[ARCHITECTURE_V2.md](documentation/ARCHITECTURE_V2.md)**: Detalii arhitecturale.
+- **[INTEGRATION_GUIDE.md](documentation/INTEGRATION_GUIDE.md)**: Ghid de integrare module.
 
-```
-project/
-├── components/          # Componente platformă principală
-├── formular-jurat/      # Aplicație separată pentru înscriere jurați
-│   ├── components/      # Componente formular
-│   └── dist/           # Build formular
-├── dist/               # Build platformă principală
-│   └── formular-jurat/ # Formular copiat aici la build
-└── README.md
-```
+## 💾 Date și Persistență
 
-## Funcționalități
+- **Mod Demo**: Utilizează `localStorage` pentru date temporare (candidați, jurați, scoruri).
+- **Resetare**: Execută `localStorage.clear()` în consola browserului pentru a reveni la starea inițială.
+- **Supabase**: Configurat pentru autentificare și structură bază de date (vezi `supabase/migrations`).
 
-### Platformă Principală
-- **Judge View**: Evaluare candidați de către jurați
-- **Leaderboard**: Clasament candidați
-- **Admin View**:
-  - Gestionare competiție
-  - Asignare jurați
-  - **Înscrieri Jurați**: Gestionare înscrieri din formular
-- **Documentation**: Ghid complet utilizare
+## 🛠 Tehnologii
 
-### Formular Înscriere Jurat
-- Formular multi-step (4 pași)
-- Validări complete
-- Salvare progres automată
-- Trimitere date în localStorage
-- Design responsive
-
-## Date Demo
-
-Toate datele sunt salvate în **localStorage**:
-- `candidatesData`: Candidați (6 demo)
-- `judgesData`: Jurați (4 demo)
-- `judgeAssignments`: Asignări
-- `judgingScores`: Scoruri evaluare
-- `juryRegistrations`: Înscrieri noi jurați (3 demo)
-- `auditLogs`: Istoric acțiuni
-- `competitionSettings`: Configurări
-
-## Resetare Date
-
-Pentru a reseta toate datele demo:
-
-```javascript
-// În Developer Console (F12)
-localStorage.clear();
-location.reload();
-```
-
-## Tehnologii
-
-- **React 19** + TypeScript
-- **Vite** pentru build
-- **Tailwind CSS** via CDN
-- **PDF.js** pentru afișare documente
-- **localStorage** pentru persistență (demo mode)
-
-## Note Importante
-
-1. În **development**, trebuie să rulezi ambele servere separat
-2. Butonul "Înscriere Jurat" din platformă va funcționa doar după **build**
-3. Pentru testing în dev, accesează direct formularul pe portul său
-4. Toate datele sunt locale și temporare (localStorage)
-
-## Documentație Completă
-
-Vezi fișierele:
-- `DEMO_INFO.md` - Detalii modul demo
-- `formular-jurat/README.md` - Detalii formular
-- Tab "Documentation" în platformă - Ghid utilizare complet
+- **Core**: React 19, TypeScript, Vite
+- **Styling**: Tailwind CSS (via PostCSS)
+- **Data**: Supabase (Auth/DB), localStorage (Fallback/Demo)
+- **Utils**: PDF.js (Vizualizare documente), SheetJS (Export)
