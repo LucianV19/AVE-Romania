@@ -87,7 +87,11 @@ Comanda va construi atât platforma principală cât și formularul de jurați, 
 
 Toată documentația tehnică a fost mutată în folderul `documentation/`:
 - **[ARCHITECTURE_V2.md](documentation/ARCHITECTURE_V2.md)**: Detalii arhitecturale.
-- **[INTEGRATION_GUIDE.md](documentation/INTEGRATION_GUIDE.md)**: Ghid de integrare module.
+- **[HOME_PAGE_DOCUMENTATION.md](documentation/HOME_PAGE_DOCUMENTATION.md)**: Documentație pentru pagina principală.
+- **[home_quick_start.md](documentation/home_quick_start.md)**: Ghid de utilizare rapidă pentru pagina principală.
+- **[integration_architecture.md](documentation/integration_architecture.md)**: Arhitectură de integrare module.
+- **[jurat_form_complete.md](documentation/jurat_form_complete.md)**: Documentație completă pentru formularul de înscriere jurați.
+- **[platform_status_report.md](documentation/platform_status_report.md)**: Raport de status platformă.
 
 ## 💾 Date și Persistență
 
