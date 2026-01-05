@@ -51,8 +51,8 @@ const CandidateCard: React.FC<CandidateCardProps> = ({
             </div>
 
             <div className="mb-4 flex-grow">
-                <div className="flex items-center justify-between gap-2 mb-2">
-                    <Badge variant="info" className="max-w-[150px] truncate">{category.nume}</Badge>
+                <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
+                    <Badge variant="info" className="min-w-0 max-w-full break-words whitespace-normal">{category.nume}</Badge>
                     {isCompleted && typeof assignment.scorFinal === 'number' ? (
                         <Badge variant="brand">Scor {assignment.scorFinal.toFixed(2)}</Badge>
                     ) : null}

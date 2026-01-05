@@ -41,28 +41,34 @@ const CandidateSubmissionView: React.FC<CandidateSubmissionViewProps> = ({ candi
         );
     }
 
-    const Section = ({ id, title, children }: { id: string; title: string; children: React.ReactNode }) => (
-        <details
-            className="border-b dark:border-slate-700 py-3 last:border-0"
-            open={openSections[id] ?? !isMobile}
-            onToggle={(e) => {
-                const el = e.currentTarget as HTMLDetailsElement;
-                setOpenSections(prev => ({ ...prev, [id]: el.open }));
-            }}
-        >
-            <summary className="cursor-pointer list-none select-none">
-                <div className="flex items-center justify-between gap-3 py-2">
-                    <h3 className="text-base sm:text-lg font-bold text-ave-dark-blue dark:text-slate-100">{title}</h3>
-                    <span className="text-xs font-semibold text-gray-500 dark:text-slate-400">
-                        {(openSections[id] ?? !isMobile) ? 'Ascunde' : 'Arată'}
-                    </span>
+    const Section = ({ id, title, children }: { id: string; title: string; children: React.ReactNode }) => {
+        const isOpen = openSections[id] ?? !isMobile;
+        return (
+            <details
+                className="border-b dark:border-slate-700 py-3 last:border-0"
+                open={isOpen}
+            >
+                <summary className="cursor-pointer list-none select-none">
+                    <button
+                        type="button"
+                        className="w-full flex items-center justify-between gap-3 py-2"
+                        onClick={(e) => {
+                            e.preventDefault();
+                            setOpenSections(prev => ({ ...prev, [id]: !isOpen }));
+                        }}
+                    >
+                        <h3 className="text-base sm:text-lg font-bold text-ave-dark-blue dark:text-slate-100">{title}</h3>
+                        <span className="text-xs font-semibold text-gray-500 dark:text-slate-400">
+                            {isOpen ? 'Ascunde' : 'Arată'}
+                        </span>
+                    </button>
+                </summary>
+                <div className="pt-3 pb-4">
+                    {children}
                 </div>
-            </summary>
-            <div className="pt-3 pb-4">
-                {children}
-            </div>
-        </details>
-    );
+            </details>
+        );
+    };
 
     const Field = ({ label, value }: { label: string, value: string | number | undefined | null }) => (
         <div className="mb-4">
