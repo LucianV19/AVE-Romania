@@ -1,7 +1,9 @@
 import React, { useMemo } from 'react';
 import { Candidat, Jurat, Assignment, Status, Category, Stage, AuditLog } from '../types';
 import Card from './shared/Card';
+import Donut from './shared/Donut';
 import { ChartPieIcon, UserGroupIcon, ClipboardDocumentCheckIcon, CheckBadgeIcon, ClockIcon, ChevronRightIcon } from './shared/icons';
+import { getRegions } from '../utils/regions';
 
 interface DashboardProps {
   candidates: Candidat[];
@@ -99,6 +101,18 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   const recentActivity = auditLogs.slice(0, 5);
 
+    const allRegions = getRegions();
+  const REGIONS_TO_SHOW = allRegions.slice(0, 4);
+
+  const registrationStats = useMemo(() => {
+      const total = totalCandidates || 1; // avoid division by zero
+      return REGIONS_TO_SHOW.map(region => {
+          const count = candidates.filter(c => c.regiune === region).length;
+          const percent = total > 0 ? Math.round((count / total) * 100) : 0;
+          return { region, count, percent };
+      });
+  }, [REGIONS_TO_SHOW.join('|'), candidates, totalCandidates]);
+
 
   return (
     <div className="space-y-8">
@@ -164,6 +178,24 @@ const Dashboard: React.FC<DashboardProps> = ({
             }}
         />
       </div>
+
+      {/* Statistici pe Regiuni */}
+      <section>
+          <h4 className="font-bold text-lg mb-4 text-gray-800 dark:text-slate-100 flex items-center gap-2">
+              <ChartPieIcon className="w-5 h-5 text-ave-blue"/> Înscrieri pe Regiuni
+          </h4>
+          <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-slate-700">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch">
+                  {registrationStats.map(r => (
+                      <Card key={r.region} className="p-4 flex flex-col items-center justify-center">
+                          <Donut percent={r.percent} size={96} strokeWidth={6} color="#3b82f6" />
+                          <div className="text-sm font-semibold mt-3 text-gray-800 dark:text-slate-200 text-center">{r.region}</div>
+                          <div className="text-xs text-gray-500 dark:text-slate-400">{r.count} înscrieri</div>
+                      </Card>
+                  ))}
+              </div>
+          </div>
+      </section>
 
       {/* Pipeline Visualization */}
       <section>

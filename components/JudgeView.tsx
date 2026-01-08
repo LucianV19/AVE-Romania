@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Candidat, Jurat, Assignment, Status, Criterion, Category, Regiune, Stage } from '../types';
+import { Candidat, Jurat, Assignment, Status, Criterion, Category, Stage } from '../types';
+import { getRegions } from '../utils/regions';
 import Card from './shared/Card';
 import { SearchIcon, SlidersIcon, UserGroupIcon } from './shared/icons';
 import ScoringPanel from './shared/ScoringPanel';
@@ -20,7 +21,7 @@ interface JudgeViewProps {
 const JudgeView: React.FC<JudgeViewProps> = ({ candidates, assignments, criteria, categories, stages, currentJudge, setAssignments, isAnonymized = false }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<Status | 'all'>('all');
-  const [regionFilter, setRegionFilter] = useState<Regiune | 'all'>('all');
+  const [regionFilter, setRegionFilter] = useState<string | 'all'>('all');
   const [categoryFilter, setCategoryFilter] = useState<string | 'all'>('all');
   const [selectedAsignmentId, setSelectedAsignmentId] = useState<string | null>(null);
   const [evaluationAssignmentId, setEvaluationAssignmentId] = useState<string | null>(null);
@@ -161,11 +162,11 @@ const JudgeView: React.FC<JudgeViewProps> = ({ candidates, assignments, criteria
               <UserGroupIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-400 w-6 h-6" />
               <select
                 value={regionFilter}
-                onChange={(e) => setRegionFilter(e.target.value as Regiune | 'all')}
+                onChange={(e) => setRegionFilter(e.target.value as string | 'all')}
                 className="w-full pl-12 pr-4 py-3.5 text-base border border-gray-300 rounded-xl appearance-none focus:ring-ave-blue focus:border-ave-blue dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100 dark:[color-scheme:dark]"
               >
                 <option value="all">Toate regiunile</option>
-                {Object.values(Regiune).map(reg => (
+                {getRegions().map(reg => (
                     <option key={reg} value={reg}>{reg}</option>
                 ))}
               </select>

@@ -7,6 +7,7 @@ import { ADMINI } from '../constants';
 import Tooltip from './shared/Tooltip';
 import ScoringPanel from './shared/ScoringPanel';
 import Dashboard from './Dashboard';
+import { getRegions, saveRegions, resetRegions } from '../utils/regions';
 
 // Helper hook for debouncing input to improve performance on large lists
 function useDebounce<T>(value: T, delay: number): T {
@@ -24,6 +25,99 @@ function useDebounce<T>(value: T, delay: number): T {
 
   return debouncedValue;
 }
+
+const RegionsManager: React.FC<{
+    candidates: Candidat[];
+    setCandidates: React.Dispatch<React.SetStateAction<Candidat[]>>;
+    addAuditLog: (log: Omit<AuditLog, 'id' | 'timestamp'>) => void;
+    currentUser: Admin;
+}> = ({ candidates, setCandidates, addAuditLog, currentUser }) => {
+    const [regions, setRegions] = React.useState<string[]>(() => getRegions());
+    const [editingIndex, setEditingIndex] = React.useState<number | null>(null);
+    const [editingValue, setEditingValue] = React.useState('');
+    const [newRegion, setNewRegion] = React.useState('');
+
+    const handleSave = () => {
+        saveRegions(regions);
+        addAuditLog({ adminId: currentUser.id, actiune: 'Actualizare Regiuni', detalii: { modificare: 'Regiuni actualizate' , motiv: 'Regiuni modificate din interfața de administrare.' } });
+        alert('Regiunile au fost salvate.');
+    };
+
+    const handleAdd = () => {
+        const val = newRegion.trim();
+        if (!val) return;
+        setRegions(prev => {
+            const next = [...prev, val];
+            saveRegions(next);
+            return next;
+        });
+        setNewRegion('');
+    };
+
+    const startEdit = (idx: number) => {
+        setEditingIndex(idx);
+        setEditingValue(regions[idx]);
+    };
+
+    const confirmEdit = (idx: number) => {
+        const old = regions[idx];
+        const updated = regions.map((r, i) => i === idx ? editingValue.trim() : r);
+        setRegions(updated);
+        saveRegions(updated);
+        // update candidates which referenced old region
+        setCandidates(prev => prev.map(c => ({ ...c, regiune: (c.regiune === old ? (editingValue.trim() as any) : c.regiune) })));
+        addAuditLog({ adminId: currentUser.id, actiune: 'Schimbare Regiune', detalii: { modificare: `"${old}" -> "${editingValue.trim()}"`, motiv: ' redenumire regiune' } });
+        setEditingIndex(null);
+        setEditingValue('');
+    };
+
+    const handleDelete = (idx: number) => {
+        const removed = regions[idx];
+        if (!confirm(`Ștergeți regiunea "${removed}"? Această acțiune nu va șterge candidații, dar le va lăsa regiunea neschimbată.`)) return;
+        const updated = regions.filter((_, i) => i !== idx);
+        setRegions(updated);
+        saveRegions(updated);
+        addAuditLog({ adminId: currentUser.id, actiune: 'Ștergere Regiune', detalii: { modificare: removed, motiv: 'Regiune ștearsă din setări' } });
+    };
+
+    return (
+        <div className="flex flex-col gap-3">
+            <div className="space-y-2">
+                {regions.map((r, idx) => (
+                    <div key={r} className="flex items-center justify-between gap-2">
+                        {editingIndex === idx ? (
+                            <input value={editingValue} onChange={e => setEditingValue(e.target.value)} className="flex-1 px-3 py-2 rounded-md border" />
+                        ) : (
+                            <div className="text-sm text-gray-800 dark:text-slate-200 flex-1">{r}</div>
+                        )}
+                        <div className="flex items-center gap-2">
+                            {editingIndex === idx ? (
+                                <>
+                                    <button onClick={() => confirmEdit(idx)} className="px-2 py-1 bg-green-500 text-white rounded-md text-xs">Salvează</button>
+                                    <button onClick={() => { setEditingIndex(null); setEditingValue(''); }} className="px-2 py-1 bg-gray-200 rounded-md text-xs">Anulează</button>
+                                </>
+                            ) : (
+                                <>
+                                    <button onClick={() => startEdit(idx)} className="px-2 py-1 bg-ave-blue text-white rounded-md text-xs">Editează</button>
+                                    <button onClick={() => handleDelete(idx)} className="px-2 py-1 bg-red-500 text-white rounded-md text-xs">Șterge</button>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                ))}
+            </div>
+            <div className="flex gap-2">
+                <input placeholder="Adaugă regiune nouă" value={newRegion} onChange={e => setNewRegion(e.target.value)} className="flex-1 px-3 py-2 rounded-md border" />
+                <button onClick={handleAdd} className="px-3 py-2 bg-ave-blue text-white rounded-md">Adaugă</button>
+            </div>
+            <div className="flex justify-end gap-2">
+                <button onClick={() => { resetRegions(); const def = getRegions(); setRegions(def); alert('Regiunile au fost resetate la valorile implicite.'); }} className="px-3 py-1 text-sm rounded-md bg-gray-100">Reset</button>
+                <button onClick={handleSave} className="px-3 py-1 text-sm rounded-md bg-ave-blue text-white">Salvează</button>
+            </div>
+        </div>
+    );
+};
+
 
 type AdminViewProps = {
     candidates: Candidat[];
@@ -285,7 +379,7 @@ const ConfigManagement: React.FC<ConfigManagementProps> = (props) => {
 
             {activeSubTab === 'structure' && (
                 <>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                 <Card className="p-6">
                     <div className="flex justify-between items-center mb-4">
                         <h3 className="text-lg font-bold text-ave-blue">Setări Globale</h3>
@@ -321,6 +415,12 @@ const ConfigManagement: React.FC<ConfigManagementProps> = (props) => {
                             <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">Acest termen va fi afișat în formularul de înscriere.</p>
                         </div>
                     </div>
+                </Card>
+                <Card className="p-6">
+                    <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-lg font-bold text-ave-blue">Regiuni</h3>
+                    </div>
+                    <RegionsManager candidates={candidates} setCandidates={setCandidates} addAuditLog={addAuditLog} currentUser={currentUser} />
                 </Card>
                 {/* Candidates moved to tab */}
                 {/* Judges moved to tab */}
@@ -438,7 +538,7 @@ const ConfigManagement: React.FC<ConfigManagementProps> = (props) => {
                                 className="w-full sm:w-auto px-3 py-2 border rounded-md text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-white"
                             >
                                 <option value="all">Toate Regiunile</option>
-                                {Object.values(Regiune).map(r => (
+                                {getRegions().map(r => (
                                     <option key={r} value={r}>{r}</option>
                                 ))}
                             </select>

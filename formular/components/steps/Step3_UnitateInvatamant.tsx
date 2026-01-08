@@ -2,7 +2,8 @@
 import React, { useState } from 'react';
 import { FormData, FormErrors } from '../../types';
 import InputField from '../InputField';
-import { JUDETE, REGIUNI, NIVELURI_INVATAMANT } from '../../constants';
+import { JUDETE, NIVELURI_INVATAMANT } from '../../constants';
+import { getRegions } from '../../../utils/regions';
 
 interface Props {
   data: FormData;
@@ -23,9 +24,10 @@ const Step3_UnitateInvatamant: React.FC<Props> = ({ data, handleChange, handleNi
     setIsRegionFocused(false);
   };
   
+  const allRegions = getRegions();
   const filteredRegions =
     isRegionFocused && data.regiuneUnitate
-      ? REGIUNI.filter(
+      ? allRegions.filter(
           r =>
             r.toLowerCase().includes(data.regiuneUnitate.toLowerCase()) &&
             r.toLowerCase() !== data.regiuneUnitate.toLowerCase()
