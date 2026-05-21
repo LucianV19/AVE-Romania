@@ -1,6 +1,6 @@
 
 
-import React, { useState, useEffect, useRef, Suspense } from 'react';
+import React, { useState, useEffect, useRef, Suspense, useLayoutEffect } from 'react';
 import { FormData, FormErrors, ThemeColors, ProiectNarativ, UploadedFile } from './types';
 import { STEPS, NIVELURI_INVATAMANT, CATEGORII_PROIECT, DEADLINE_LABEL } from './constants';
 import ProgressBar from './components/ProgressBar';
@@ -72,6 +72,7 @@ const App: React.FC = () => {
   const [scrollToElementId, setScrollToElementId] = useState<string | null>(null);
   const [animationClass, setAnimationClass] = useState('');
   const [targetStep, setTargetStep] = useState<number | null>(null);
+  const formSectionRef = useRef<HTMLDivElement>(null);
   const stepContainerRef = useRef<HTMLDivElement>(null);
 
   const [theme, setTheme] = useState<ThemeColors>(() => {
@@ -117,11 +118,11 @@ const App: React.FC = () => {
     } catch {}
   }, []);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (scrollToElementId) return;
     const titleElement = stepContainerRef.current?.querySelector('h2');
     if (titleElement) titleElement.focus();
-    window.scrollTo(0, 0);
+    formSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, [currentStep, scrollToElementId]);
 
   useEffect(() => {
@@ -533,10 +534,11 @@ const App: React.FC = () => {
                 </div>
              </header>
             
-            <ProgressBar steps={STEPS} currentStep={currentStep} goToStep={goToStep} />
-            <CompletionProgressBar currentStep={currentStep} totalSteps={STEPS.length} />
+            <div ref={formSectionRef}>
+              <ProgressBar steps={STEPS} currentStep={currentStep} goToStep={goToStep} />
+              <CompletionProgressBar currentStep={currentStep} totalSteps={STEPS.length} />
 
-            <div ref={stepContainerRef} className={animationClass}>
+              <div ref={stepContainerRef} className={animationClass}>
                 <Suspense fallback={<div className="text-brand-text-light text-center py-8">Se încarcă...</div>}>
                 <form onSubmit={handleSubmit} noValidate>
                     <div role="status" aria-live="polite" className="sr-only">{Object.keys(errors).length > 0 ? 'Există erori de completare în formular.' : ''}</div>
@@ -581,8 +583,8 @@ const App: React.FC = () => {
                 </Suspense>
             </div>
         </div>
-
     </div>
+  </div>
   );
 };
 

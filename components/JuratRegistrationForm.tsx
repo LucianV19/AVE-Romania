@@ -1,80 +1,84 @@
 import React, { useState, useEffect } from 'react';
-import { View } from '../types';
+import { JuryFormData, JuryFormErrors, ThemeColors } from './types';
 
-interface JuratFormData {
-  prenume: string;
-  nume: string;
-  functie: string;
-  responsabilitati: string[];
-  linkedinProfile: string;
-  facebookProfile: string;
-  otherProfile: string;
-  recomandari: string;
-  foto_url?: string;
-  acordGDPR: boolean;
-  acordRegulament: boolean;
-}
+const initialFormData: JuryFormData = {
+  nume: '',
+  prenume: '',
+  email: '',
+  confirmEmail: '',
+  password: '',
+  telefon: '',
+  profesie: '',
+  organizatie: '',
+  experienta: '',
+  domeniu_expertiza: '',
+  ani_experienta: '',
+  linkedin_url: '',
+  facebook_url: '',
+  instagram_url: '',
+  motivatie: '',
+  foto_url: '',
+  acordGDPR: false
+};
 
-interface JuratRegistrationFormProps {
-  onSubmit: (formData: JuratFormData) => void;
-  onCancel: () => void;
-}
+const defaultTheme: ThemeColors = {
+  bgStart: '#100E1D',
+  bgEnd: '#16213e',
+  inputBg: '#D7D2E8',
+  textDark: '#2E234F',
+  textLight: '#DCD8EC',
+  button: '#575A89',
+  white: '#FFFFFF'
+};
 
-const JuratRegistrationForm: React.FC<JuratRegistrationFormProps> = ({ onSubmit, onCancel }) => {
-  const [formData, setFormData] = useState<JuratFormData>({
-    prenume: '',
-    nume: '',
-    functie: '',
-    responsabilitati: [],
-    linkedinProfile: '',
-    facebookProfile: '',
-    otherProfile: '',
-    recomandari: '',
-    foto_url: '',
-    acordGDPR: false,
-    acordRegulament: false,
-  });
+const App: React.FC = () => {
+  const [formData, setFormData] = useState<JuryFormData>(initialFormData);
+  const [errors, setErrors] = useState<JuryFormErrors>({});
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [submitting, setSubmitting] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
+  const [theme] = useState<ThemeColors>(defaultTheme);
 
-  const responsabilitatiOptions = [
-    'Conducere instituție de învățământ',
-    'Conducere departament',
-    'Conducere program educațional',
-    'Inițiative educaționale',
-    'Proiecte și parteneriate',
-    'Calitatea educației',
-    'Incluziune și diversitate',
-  ];
+  useEffect(() => {
+    const root = document.documentElement;
+    Object.entries(theme).forEach(([key, value]) => {
+      const cssVar = `--color-${key.replace(/([A-Z])/g, '-$1').toLowerCase()}`;
+      root.style.setProperty(cssVar, value as string);
+    });
+  }, [theme]);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = reader.result as string;
-        setFormData(prev => ({ ...prev, foto_url: base64String }));
-      };
-      reader.readAsDataURL(file);
+  useEffect(() => {
+    const savedData = localStorage.getItem('juryFormData');
+    if (savedData) {
+      try {
+        const parsedData = JSON.parse(savedData);
+        setFormData(prev => ({ ...prev, ...parsedData }));
+      } catch (e) {
+        console.error('Error loading saved data:', e);
+      }
     }
+  }, []);
+
+  const saveProgress = () => {
+    localStorage.setItem('juryFormData', JSON.stringify(formData));
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value, type } = e.target;
-    if (type === 'checkbox') {
-      setFormData(prev => ({
-        ...prev,
-        [name]: (e.target as HTMLInputElement).checked,
-      }));
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        [name]: value,
-      }));
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, type } = e.currentTarget;
+    let value: string | boolean = type === 'checkbox' ? (e.currentTarget as HTMLInputElement).checked : e.currentTarget.value;
+
+    if (type === 'tel') {
+      value = value.toString().replace(/[^0-9]/g, '').slice(0, 10);
     }
-    // Clear error for this field
+    // Remove numeric replacement for general inputs if any
+
+    setFormData(prev => {
+        const newData = { ...prev, [name]: value };
+        localStorage.setItem('juryFormData', JSON.stringify(newData)); // Save on change
+        return newData;
+    });
+
     if (errors[name]) {
       setErrors(prev => {
         const newErrors = { ...prev };
@@ -84,24 +88,23 @@ const JuratRegistrationForm: React.FC<JuratRegistrationFormProps> = ({ onSubmit,
     }
   };
 
-  const handleResponsabilitatiChange = (option: string) => {
-    setFormData(prev => ({
-      ...prev,
-      responsabilitati: prev.responsabilitati.includes(option)
-        ? prev.responsabilitati.filter(r => r !== option)
-        : [...prev.responsabilitati, option],
-    }));
-  };
-
   const validateForm = (): boolean => {
-    const newErrors: Record<string, string> = {};
+    const newErrors: JuryFormErrors = {};
 
-    if (!formData.prenume.trim()) newErrors.prenume = 'Prenumele este obligatoriu';
-    if (!formData.nume.trim()) newErrors.nume = 'Numele este obligatoriu';
-    if (!formData.functie.trim()) newErrors.functie = 'Funcția este obligatorie';
-    if (formData.responsabilitati.length === 0) newErrors.responsabilitati = 'Selectează cel puțin o responsabilitate';
-    if (!formData.acordGDPR) newErrors.acordGDPR = 'Trebuie să accepți GDPR';
-    if (!formData.acordRegulament) newErrors.acordRegulament = 'Trebuie să accepți regulamentul';
+    if (!formData.nume) newErrors.nume = 'Numele este obligatoriu';
+    if (!formData.prenume) newErrors.prenume = 'Prenumele este obligatoriu';
+    if (!formData.email) newErrors.email = 'Emailul este obligatoriu';
+    else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Adresa de email este invalidă';
+    
+    if (!formData.password) newErrors.password = 'Parola este obligatorie';
+    else if (formData.password.length < 6) newErrors.password = 'Parola trebuie să aibă minim 6 caractere';
+
+    if (!formData.motivatie) newErrors.motivatie = 'Motivația este obligatorie';
+    if (formData.motivatie && formData.motivatie.length > 400) {
+         newErrors.motivatie = 'Textul depășește limita de 400 de caractere.';
+    }
+
+    if (!formData.acordGDPR) newErrors.acordGDPR = 'Acordul GDPR este obligatoriu';
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -109,68 +112,75 @@ const JuratRegistrationForm: React.FC<JuratRegistrationFormProps> = ({ onSubmit,
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
-      return;
+        const firstError = document.querySelector('.text-red-400');
+        if (firstError) {
+            firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        return;
     }
 
-    setSubmitting(true);
+    setIsSubmitting(true);
+    setSubmitError(null);
 
     try {
-      // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
 
-      // Save to localStorage
-      const juratData = {
-        ...formData,
-        id: `jurat_${Date.now()}`,
-        submitDate: new Date().toISOString(),
+      const registration = {
+        id: `jury_${Date.now()}`,
+        nume: formData.nume,
+        prenume: formData.prenume,
+        email: formData.email,
+        password: formData.password,
+        telefon: formData.telefon,
+        profesie: formData.profesie,
+        organizatie: formData.organizatie,
+        experienta: formData.experienta,
+        domeniu_expertiza: formData.domeniu_expertiza,
+        ani_experienta: parseInt(formData.ani_experienta) || 0,
+        linkedin_url: formData.linkedin_url || '',
+        facebook_url: formData.facebook_url || '',
+        instagram_url: formData.instagram_url || '',
+        motivatie: formData.motivatie,
+        foto_url: formData.foto_url || '',
+        status: 'in_asteptare',
+        nota_admin: '',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       };
-      localStorage.setItem('juratFormData', JSON.stringify(juratData));
-      localStorage.setItem('juratSubmissionPending', 'true');
 
-      setSubmitted(true);
-      onSubmit(formData);
+      const existingRegistrations = JSON.parse(localStorage.getItem('juryRegistrations') || '[]');
+      existingRegistrations.push(registration);
+      localStorage.setItem('juryRegistrations', JSON.stringify(existingRegistrations));
 
-      // Show success for 2 seconds then reset
-      setTimeout(() => {
-        setSubmitted(false);
-        setFormData({
-          prenume: '',
-          nume: '',
-          functie: '',
-          responsabilitati: [],
-          linkedinProfile: '',
-          facebookProfile: '',
-          otherProfile: '',
-          recomandari: '',
-          acordGDPR: false,
-          acordRegulament: false,
-        });
-      }, 2000);
-    } catch (error) {
-      setErrors({ submit: 'Eroare la trimiterea formularului. Te rog încearcă din nou.' });
+      localStorage.removeItem('juryFormData');
+      setIsSubmitted(true);
+    } catch (error: any) {
+      console.error('Submission error:', error);
+      setSubmitError(error.message || 'A apărut o eroare. Vă rugăm încercați din nou.');
     } finally {
-      setSubmitting(false);
+      setIsSubmitting(false);
     }
   };
 
-  if (submitted) {
+  if (isSubmitted) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex flex-col items-center justify-center p-4">
-        <div className="w-full max-w-2xl">
-          <div className="bg-emerald-500/20 backdrop-blur-sm rounded-2xl border border-emerald-500/50 p-12 text-center">
-            <div className="text-6xl mb-4">✅</div>
-            <h2 className="text-3xl font-bold text-white mb-2">Formular Trimis cu Succes!</h2>
-            <p className="text-emerald-200 mb-6">
-              Mulțumim! Candidatura ta ca jurat a fost primită. Te vom contacta în curând cu detalii despre etapele următoare.
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="max-w-2xl w-full">
+          <div className="bg-white/10 p-6 rounded-lg mb-8 text-center">
+            <h2 className="text-3xl font-bold text-brand-white mb-4">Mulțumim!</h2>
+            <p className="text-brand-text-light mb-6">
+              Pentru că ne dorim să avem același orizont de așteptare, te rog să ai în vedere că actualizările pe website și postările din social media, se publică de îndată ce întrunim condițiile de mai sus, pentru 6 jurați, ca să putem lucra vizualul de grup.
             </p>
-            <button
-              onClick={onCancel}
-              className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg transition-colors"
-            >
-              Înapoi la pagina principală
-            </button>
+            <div className="flex justify-center gap-4">
+              <button
+                onClick={() => window.location.href = '/'}
+                className="bg-brand-button text-brand-white px-8 py-3 rounded-full font-bold hover:bg-opacity-90 transition-colors"
+              >
+                Înapoi la Site
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -178,276 +188,259 @@ const JuratRegistrationForm: React.FC<JuratRegistrationFormProps> = ({ onSubmit,
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 py-8 px-4">
-      <div className="max-w-4xl mx-auto">
-        {/* Back Button */}
-        <button
-          onClick={onCancel}
-          className="mb-6 px-4 py-2 rounded-lg bg-slate-700/50 hover:bg-slate-700 text-white text-sm font-medium transition-colors"
-        >
-          ← Înapoi
-        </button>
-
-        {/* Header */}
-        <div className="bg-gradient-to-r from-purple-600/20 to-purple-500/20 backdrop-blur-sm rounded-2xl border border-purple-500/30 p-8 mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2">⚖️ Formular Înregistrare Jurat</h1>
-          <p className="text-purple-200">
-            Completează formularul pentru a participa ca jurat la Gala Premiilor pentru Directorii Anului 2025
-          </p>
-        </div>
-
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-8">
-          {/* Info Banner */}
-          <div className="bg-blue-500/20 backdrop-blur-sm rounded-xl border border-blue-500/30 p-6">
-            <p className="text-blue-200 text-sm">
-              <span className="font-semibold">ℹ️ Dreptul juridic:</span> Prin participarea ca jurat, confirms că ești o personalitate cu o carieră importantă în educație și ești dispus/ă să evaluezi candidații conform criteriilor de jurizare. Datele tale vor fi tratate confidențial conform GDPR.
+    <div className="min-h-screen flex flex-col items-center justify-start p-4 sm:p-6">
+      <div className="w-full max-w-3xl py-8 sm:py-12">
+        <header className="text-center mb-8 sm:mb-12">
+          <div className="inline-block border border-brand-text-light p-2 mb-6">
+            <p className="text-sm font-bold tracking-wider">GALA PREMIILOR</p>
+            <p className="text-xs">PENTRU DIRECTORII ANULUI 2026</p>
+          </div>
+          <h1 className="text-3xl sm:text-4xl font-bold text-brand-white mb-4">
+            Dragă jurat,
+          </h1>
+          <div className="text-brand-text-light mb-4 text-left space-y-4">
+            <p>
+              Bine ai venit în comunitatea celor care vor genera schimbarea în educație, prin alegerea <strong>Directorilor Anului 2025</strong>, directori de școală a căror realizări inspiră și dau încredere într-un viitor mai bun.
+            </p>
+            <p>
+              Implicarea ta ca jurat o vom face cunoscută pe rețelele de socializare AVE <a href="#" className="text-blue-400 underline">LinkedIn</a>, <a href="#" className="text-blue-400 underline">Facebook</a> și în secțiunea de jurat a <a href="#" className="text-blue-400 underline">Galei Premiilor pentru Directorii Anului</a>.
+            </p>
+            <p>
+              Poți spune și tu comunității tale online despre rolul important pe care ți l-ai asumat, cu ajutorul <strong>vizualului</strong> pe care îl vom crea special pentru tine.
+              Mai jos poți vedea simulări ale execuțiilor care vor apărea în mediul online: vizual de grup, individual, secțiunea dedicată juriului Galei. M-am folosit pe mine ca exemplu. 😊
+            </p>
+            <p>
+              Pentru a putea implementa toate cele de mai sus sunt necesare câteva informații de la tine. Te rog să completezi câmpurile de mai jos, <strong>folosind diacritice</strong>.
+            </p>
+            <p className="font-bold text-blue-300">
+              Asigură-te că datele sunt corecte întrucât ele vor pleca direct la designer pentru implementare.
             </p>
           </div>
+        </header>
 
-          {/* Personal Info */}
-          <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-slate-700 p-8">
-            <h2 className="text-xl font-bold text-white mb-6">Informații Personale</h2>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Prenume */}
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
-                  Prenume *
-                </label>
-                <input
-                  type="text"
-                  name="prenume"
-                  value={formData.prenume}
-                  onChange={handleInputChange}
-                  placeholder="Ion"
-                  className={`w-full px-4 py-2 rounded-lg bg-slate-700/50 border ${
-                    errors.prenume ? 'border-red-500' : 'border-slate-600'
-                  } text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500`}
-                />
-                {errors.prenume && <p className="text-red-400 text-sm mt-1">{errors.prenume}</p>}
-              </div>
-
-              {/* Nume */}
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
-                  Nume *
-                </label>
-                <input
-                  type="text"
-                  name="nume"
-                  value={formData.nume}
-                  onChange={handleInputChange}
-                  placeholder="Popescu"
-                  className={`w-full px-4 py-2 rounded-lg bg-slate-700/50 border ${
-                    errors.nume ? 'border-red-500' : 'border-slate-600'
-                  } text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500`}
-                />
-                {errors.nume && <p className="text-red-400 text-sm mt-1">{errors.nume}</p>}
-              </div>
-            </div>
-
-            {/* Funcție */}
-            <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
-                  Funcție/Poziție *
-                </label>
-                <input
-                  type="text"
-                  name="functie"
-                  value={formData.functie}
-                  onChange={handleInputChange}
-                  placeholder="ex: Director, Rector, Inspector Școlar..."
-                  className={`w-full px-4 py-2 rounded-lg bg-slate-700/50 border ${
-                    errors.functie ? 'border-red-500' : 'border-slate-600'
-                  } text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500`}
-                />
-                {errors.functie && <p className="text-red-400 text-sm mt-1">{errors.functie}</p>}
-              </div>
-
-              <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">Poză Profil (Opțional)</label>
-                  <div className="flex items-center gap-4">
-                      {formData.foto_url && (
-                          <img src={formData.foto_url} alt="Preview" className="w-10 h-10 rounded-full object-cover border border-slate-600" />
-                      )}
-                      <input 
-                          type="file" 
-                          accept="image/*" 
-                          onChange={handleFileChange} 
-                          className="w-full text-sm text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-purple-600 file:text-white hover:file:bg-purple-700" 
-                      />
-                  </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Responsabilități */}
-          <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-slate-700 p-8">
-            <h2 className="text-xl font-bold text-white mb-6">Responsabilități și Experiență *</h2>
-            <p className="text-slate-400 text-sm mb-4">Selectează-ți ariile de competență (min. 1)</p>
-
-            <div className="space-y-3">
-              {responsabilitatiOptions.map((option) => (
-                <label key={option} className="flex items-center p-3 rounded-lg hover:bg-slate-700/30 cursor-pointer transition-colors">
-                  <input
-                    type="checkbox"
-                    checked={formData.responsabilitati.includes(option)}
-                    onChange={() => handleResponsabilitatiChange(option)}
-                    className="w-5 h-5 rounded border-slate-600 text-purple-600 focus:ring-purple-500"
-                  />
-                  <span className="ml-3 text-slate-300">{option}</span>
-                </label>
-              ))}
-            </div>
-
-            {errors.responsabilitati && (
-              <p className="text-red-400 text-sm mt-3">{errors.responsabilitati}</p>
-            )}
-          </div>
-
-          {/* Social Profiles */}
-          <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-slate-700 p-8">
-            <h2 className="text-xl font-bold text-white mb-6">Prezenţă Online (Opțional)</h2>
-
+        <form onSubmit={handleSubmit} className="bg-white/5 backdrop-blur-sm rounded-lg p-6 sm:p-8 space-y-8">
+            {/* Secțiunea 1: Date de Contact și Identificare */}
             <div className="space-y-6">
-              {/* LinkedIn */}
+              <h2 className="text-2xl font-bold text-brand-white border-b border-gray-700 pb-2">Date de Contact și Identificare</h2>
+
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
-                  Profil LinkedIn
-                </label>
+                <label className="block text-brand-text-light mb-2">E-mail *</label>
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 rounded-md bg-brand-input-bg text-brand-text-dark focus:outline-none focus:ring-2 focus:ring-brand-button"
+                />
+                {errors.email && <p className="text-red-400 text-sm mt-1">{errors.email}</p>}
+              </div>
+
+              <div>
+                <label className="block text-brand-text-light mb-2">Parolă (pentru acces cont) *</label>
+                <input
+                  type="password"
+                  name="password"
+                  value={formData.password || ''}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 rounded-md bg-brand-input-bg text-brand-text-dark focus:outline-none focus:ring-2 focus:ring-brand-button"
+                />
+                {errors.password && <p className="text-red-400 text-sm mt-1">{errors.password}</p>}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-brand-text-light mb-2">Prenume *</label>
+                  <input
+                    type="text"
+                    name="prenume"
+                    value={formData.prenume}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 rounded-md bg-brand-input-bg text-brand-text-dark focus:outline-none focus:ring-2 focus:ring-brand-button"
+                  />
+                  {errors.prenume && <p className="text-red-400 text-sm mt-1">{errors.prenume}</p>}
+                </div>
+                <div>
+                  <label className="block text-brand-text-light mb-2">Nume *</label>
+                  <input
+                    type="text"
+                    name="nume"
+                    value={formData.nume}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 rounded-md bg-brand-input-bg text-brand-text-dark focus:outline-none focus:ring-2 focus:ring-brand-button"
+                  />
+                  {errors.nume && <p className="text-red-400 text-sm mt-1">{errors.nume}</p>}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-brand-text-light mb-2">Funcția *</label>
+                <input
+                  type="text"
+                  name="profesie"
+                  value={formData.profesie}
+                  onChange={handleChange}
+                  placeholder="Ex: Director Executiv"
+                  className="w-full px-4 py-3 rounded-md bg-brand-input-bg text-brand-text-dark focus:outline-none focus:ring-2 focus:ring-brand-button"
+                />
+                {errors.profesie && <p className="text-red-400 text-sm mt-1">{errors.profesie}</p>}
+              </div>
+
+              <div>
+                <label className="block text-brand-text-light mb-2">Organizația pe care o reprezinți *</label>
+                <input
+                  type="text"
+                  name="organizatie"
+                  value={formData.organizatie}
+                  onChange={handleChange}
+                  placeholder="Ex: Compania X"
+                  className="w-full px-4 py-3 rounded-md bg-brand-input-bg text-brand-text-dark focus:outline-none focus:ring-2 focus:ring-brand-button"
+                />
+                {errors.organizatie && <p className="text-red-400 text-sm mt-1">{errors.organizatie}</p>}
+              </div>
+              
+              <input type="hidden" name="telefon" value={formData.telefon || '0000000000'} />
+            </div>
+
+            {/* Secțiunea 2: Profile Social Media */}
+            <div className="space-y-6">
+              <h2 className="text-2xl font-bold text-brand-white border-b border-gray-700 pb-2">Profile Social Media</h2>
+
+              <div>
+                <label className="block text-brand-text-light mb-2">Link profil LinkedIn (ne ajută să te etichetăm în postarea AVE)</label>
                 <input
                   type="url"
-                  name="linkedinProfile"
-                  value={formData.linkedinProfile}
-                  onChange={handleInputChange}
-                  placeholder="https://linkedin.com/in/ionpopescu"
-                  className="w-full px-4 py-2 rounded-lg bg-slate-700/50 border border-slate-600 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  name="linkedin_url"
+                  value={formData.linkedin_url}
+                  onChange={handleChange}
+                  placeholder="https://linkedin.com/in/username"
+                  className="w-full px-4 py-3 rounded-md bg-brand-input-bg text-brand-text-dark focus:outline-none focus:ring-2 focus:ring-brand-button"
                 />
               </div>
 
-              {/* Facebook */}
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
-                  Profil Facebook
-                </label>
+                <label className="block text-brand-text-light mb-2">Link profil Facebook (ne ajută să te etichetăm în postarea AVE)</label>
                 <input
                   type="url"
-                  name="facebookProfile"
-                  value={formData.facebookProfile}
-                  onChange={handleInputChange}
-                  placeholder="https://facebook.com/ionpopescu"
-                  className="w-full px-4 py-2 rounded-lg bg-slate-700/50 border border-slate-600 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  name="facebook_url"
+                  value={formData.facebook_url}
+                  onChange={handleChange}
+                  placeholder="https://facebook.com/username"
+                  className="w-full px-4 py-3 rounded-md bg-brand-input-bg text-brand-text-dark focus:outline-none focus:ring-2 focus:ring-brand-button"
                 />
               </div>
 
-              {/* Alte profile */}
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
-                  Alte platforme / Website personal
-                </label>
+                <label className="block text-brand-text-light mb-2">Link profil Instagram (ne ajută să te etichetăm în postarea AVE)</label>
                 <input
                   type="url"
-                  name="otherProfile"
-                  value={formData.otherProfile}
-                  onChange={handleInputChange}
-                  placeholder="https://..."
-                  className="w-full px-4 py-2 rounded-lg bg-slate-700/50 border border-slate-600 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  name="instagram_url"
+                  value={formData.instagram_url}
+                  onChange={handleChange}
+                  placeholder="https://instagram.com/username"
+                  className="w-full px-4 py-3 rounded-md bg-brand-input-bg text-brand-text-dark focus:outline-none focus:ring-2 focus:ring-brand-button"
                 />
               </div>
             </div>
-          </div>
 
-          {/* Recomandări */}
-          <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-slate-700 p-8">
-            <h2 className="text-xl font-bold text-white mb-6">Mesaj Suplimentar (Opțional)</h2>
-            <p className="text-slate-400 text-sm mb-4">Spune-ne de ce consideri că ești potrivit/ă să fii jurat în această gală</p>
+            {/* Secțiunea 3: Motivație și Foto */}
+            <div className="space-y-6">
+              <h2 className="text-2xl font-bold text-brand-white border-b border-gray-700 pb-2">Motivație și Foto</h2>
 
-            <textarea
-              name="recomandari"
-              value={formData.recomandari}
-              onChange={handleInputChange}
-              placeholder="Scrie-ți motivația și experința relevantă..."
-              rows={5}
-              className="w-full px-4 py-2 rounded-lg bg-slate-700/50 border border-slate-600 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
-            />
-            <p className="text-slate-400 text-xs mt-2">Max 500 de cuvinte</p>
-          </div>
+              <div>
+                <label className="block text-brand-text-light mb-2">
+                  Text (maximum 400 caractere, spații și simboluri incluse) în care descrii motivul pentru care ai acceptat rolul de jurat și schimbarea pe care Directorii Anului crezi că o au în educație. Textul va fi publicat în secțiunea de juriu a Galei. *
+                </label>
+                <textarea
+                  name="motivatie"
+                  value={formData.motivatie}
+                  onChange={handleChange}
+                  rows={6}
+                  maxLength={400}
+                  placeholder="Descrie motivația ta..."
+                  className="w-full px-4 py-3 rounded-md bg-brand-input-bg text-brand-text-dark focus:outline-none focus:ring-2 focus:ring-brand-button"
+                />
+                <p className="text-sm text-brand-text-light mt-1">
+                  {formData.motivatie.length} / 400 caractere maxime
+                </p>
+                {errors.motivatie && <p className="text-red-400 text-sm mt-1">{errors.motivatie}</p>}
+              </div>
 
-          {/* Consents */}
-          <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-slate-700 p-8">
-            <h2 className="text-xl font-bold text-white mb-6">Acorduri și Condiții</h2>
+              <div>
+                <label className="block text-brand-text-light mb-2">Poză portret în format JPEG/PNG. Rezoluție minimă pe înălțime - 1000pixeli. Ideal, imaginea ar trebui să încadreze partea superioară a corpului cu puțin spațiu liber în jurul capului.</label>
+                
+                <div className="flex items-center space-x-2">
+                    <label className="cursor-pointer bg-white text-gray-800 font-bold py-2 px-4 rounded border border-gray-400 hover:bg-gray-100">
+                        Alege Fișier
+                        <input type="file" accept="image/png, image/jpeg" className="hidden" onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                                const reader = new FileReader();
+                                reader.onloadend = () => {
+                                    setFormData(prev => ({...prev, foto_url: reader.result as string}));
+                                };
+                                reader.readAsDataURL(file);
+                            }
+                        }}/>
+                    </label>
+                    <span className="text-brand-text-light text-sm italic">{formData.foto_url ? 'Fișier selectat' : 'Niciun fișier selectat'}</span>
+                </div>
+                 <div className="mt-2">
+                    <p className="text-xs text-brand-text-light mb-1">Sau introdu un link direct (opțional):</p>
+                    <input
+                    type="url"
+                    name="foto_url"
+                    value={formData.foto_url}
+                    onChange={handleChange}
+                    placeholder="https://..."
+                    className="w-full px-4 py-2 rounded-md bg-brand-input-bg text-brand-text-dark focus:outline-none focus:ring-2 focus:ring-brand-button text-sm"
+                    />
+                </div>
+              </div>
+            </div>
 
-            <div className="space-y-4">
-              {/* GDPR */}
-              <label className="flex items-start p-4 rounded-lg hover:bg-slate-700/30 cursor-pointer transition-colors border border-slate-700/50">
+            {/* Secțiunea 4: GDPR */}
+            <div className="space-y-6">
+               <h2 className="text-2xl font-bold text-brand-white border-b border-gray-700 pb-2">Finalizare</h2>
+               
+               <div className="flex items-start">
                 <input
                   type="checkbox"
                   name="acordGDPR"
                   checked={formData.acordGDPR}
-                  onChange={handleInputChange}
-                  className="w-5 h-5 mt-1 rounded border-slate-600 text-purple-600 focus:ring-purple-500"
+                  onChange={handleChange}
+                  className="mt-1 mr-3 w-5 h-5"
                 />
-                <span className="ml-3 text-slate-300 text-sm">
-                  <span className="font-semibold">Acordul GDPR:</span> Consimț la colectarea, prelucrarea și stocarea datelor mele personale conform GDPR. Datele vor fi utilizate exclusiv pentru scopul acestei gale.
-                </span>
-              </label>
+                <label className="text-brand-text-light text-sm">
+                  Sunt de acord cu prelucrarea datelor personale conform GDPR și accept termenii și condițiile de participare ca jurat. *
+                </label>
+              </div>
+              {errors.acordGDPR && <p className="text-red-400 text-sm">{errors.acordGDPR}</p>}
 
-              {errors.acordGDPR && <p className="text-red-400 text-sm ml-8">{errors.acordGDPR}</p>}
-
-              {/* Regulament */}
-              <label className="flex items-start p-4 rounded-lg hover:bg-slate-700/30 cursor-pointer transition-colors border border-slate-700/50">
-                <input
-                  type="checkbox"
-                  name="acordRegulament"
-                  checked={formData.acordRegulament}
-                  onChange={handleInputChange}
-                  className="w-5 h-5 mt-1 rounded border-slate-600 text-purple-600 focus:ring-purple-500"
-                />
-                <span className="ml-3 text-slate-300 text-sm">
-                  <span className="font-semibold">Accept regulamentul:</span> Citesc și accept regulamentul complet al Galei Premiilor pentru Directorii Anului 2025 și mă angajez să respect principiile de imparțialitate și profesionalism.
-                </span>
-              </label>
-
-              {errors.acordRegulament && <p className="text-red-400 text-sm ml-8">{errors.acordRegulament}</p>}
+              {submitError && (
+                <div className="bg-red-500/20 border border-red-500 rounded-lg p-4">
+                  <p className="text-red-200">{submitError}</p>
+                </div>
+              )}
             </div>
-          </div>
 
-          {/* Error Message */}
-          {errors.submit && (
-            <div className="bg-red-500/20 backdrop-blur-sm rounded-xl border border-red-500/30 p-4">
-              <p className="text-red-300">{errors.submit}</p>
+            <div className="flex justify-end pt-6 border-t border-gray-700">
+                <div className="flex flex-col items-end gap-2 w-full sm:w-auto">
+                    <button
+                        type="submit"
+                        disabled={isSubmitting}
+                        className="w-full sm:w-auto px-8 py-3 bg-brand-button text-brand-white font-bold rounded-md hover:bg-opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        {isSubmitting ? 'Se trimite...' : 'TRIMITE FORMULARUL'}
+                    </button>
+                    <p className="text-xs text-brand-text-light max-w-md text-right hidden sm:block">
+                        Pentru că ne dorim să avem același orizont de așteptare, te rog să ai în vedere că actualizările pe website și postările din social media, se publică de îndată ce întrunim condițiile de mai sus.
+                    </p>
+                </div>
             </div>
-          )}
-
-          {/* Submit Button */}
-          <div className="flex gap-4">
-            <button
-              type="submit"
-              disabled={submitting}
-              className="flex-1 py-4 px-6 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 disabled:from-slate-600 disabled:to-slate-700 text-white font-bold rounded-lg transition-all duration-200 text-lg"
-            >
-              {submitting ? '⏳ Se trimite...' : '📤 Trimite Formularul'}
-            </button>
-
-            <button
-              type="button"
-              onClick={onCancel}
-              className="py-4 px-6 bg-slate-700/50 hover:bg-slate-700 text-white font-medium rounded-lg transition-colors"
-            >
-              Anulează
-            </button>
-          </div>
-
-          {/* Footer Note */}
-          <p className="text-center text-slate-400 text-xs">
-            * Câmpurile marcate cu asterisk sunt obligatorii
-          </p>
         </form>
       </div>
     </div>
   );
 };
 
-export default JuratRegistrationForm;
+export default App;
