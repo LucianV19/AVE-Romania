@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
-import { Candidat, Jurat, Assignment, AuditLog, Stage, Category, Criterion, Status, Admin, Regiune, UserRole } from '../types';
+import { Candidat, Jurat, Assignment, AuditLog, Stage, Category, Criterion, Status, Admin, Regiune, UserRole, View } from '../types';
 import { FormData as DirectorFormData } from '../formular/types';
 import Card from './shared/Card';
 import { PlusIcon, TrashIcon, PencilSquareIcon, DownloadIcon, ClipboardDocumentCheckIcon, SearchIcon, ChatBubbleLeftIcon, InformationCircleIcon, AlertTriangleIcon, TableIcon, UserGroupIcon, DocumentDuplicateIcon, ClockIcon, CheckBadgeIcon, ChevronRightIcon, GridIcon } from './shared/icons';
@@ -8,6 +8,7 @@ import Tooltip from './shared/Tooltip';
 import ScoringPanel from './shared/ScoringPanel';
 import Dashboard from './Dashboard';
 import { getRegions, saveRegions, resetRegions } from '../utils/regions';
+import HomeButton from './shared/HomeButton';
 
 // Helper hook for debouncing input to improve performance on large lists
 function useDebounce<T>(value: T, delay: number): T {
@@ -137,6 +138,7 @@ type AdminViewProps = {
     addAuditLog: (log: Omit<AuditLog, 'id' | 'timestamp'>) => void;
     isAnonymized: boolean;
     setIsAnonymized: (value: boolean) => void;
+    onNavigate?: (view: View) => void;
 };
 
 type AdminTab = 'dashboard' | 'config' | 'assignments' | 'audit' | 'jury';
@@ -3629,7 +3631,7 @@ const CandidateSummaryModal: React.FC<CandidateSummaryModalProps> = ({ candidate
 };
 
 const AdminView: React.FC<AdminViewProps> = (props) => {
-    const { stages } = props;
+    const { stages, onNavigate } = props;
     const [activeTab, setActiveTab] = useState<AdminTab>('config');
     const [activeSubTab, setActiveSubTab] = useState<'structure' | 'candidates' | 'judges'>('structure');
     const [judgeSearch, setJudgeSearch] = useState('');
@@ -3705,7 +3707,10 @@ const AdminView: React.FC<AdminViewProps> = (props) => {
     
     return (
         <div className="space-y-6">
-            <h2 className="text-3xl font-extrabold text-ave-dark-blue dark:text-slate-100">Panou de Administrare</h2>
+            <div className="flex justify-between items-center">
+                <h2 className="text-3xl font-extrabold text-ave-dark-blue dark:text-slate-100">Panou de Administrare</h2>
+                {onNavigate && <HomeButton onNavigate={onNavigate} variant="icon" />}
+            </div>
             <div className="border-b border-gray-200 dark:border-slate-700 overflow-x-auto">
                 <nav className="-mb-px flex space-x-6" aria-label="Tabs">
                     <button onClick={() => setActiveTab('dashboard')} className={`${activeTab === 'dashboard' ? 'border-ave-blue text-ave-blue' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:border-slate-500'} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}>

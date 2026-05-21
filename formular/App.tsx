@@ -59,7 +59,11 @@ const defaultTheme: ThemeColors = {
     textDark: '#2E234F', textLight: '#DCD8EC', button: '#575A89', white: '#FFFFFF',
 };
 
-const App: React.FC = () => {
+type AppProps = {
+  onHome?: () => void;
+};
+
+const App: React.FC<AppProps> = ({ onHome }) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [errors, setErrors] = useState<FormErrors>({});
@@ -98,8 +102,10 @@ const App: React.FC = () => {
   useEffect(() => {
     const savedData = localStorage.getItem('galaFormData');
     if (savedData) {
-      const parsedData = JSON.parse(savedData);
-      setFormData(prev => ({ ...prev, ...parsedData }));
+      try {
+        const parsedData = JSON.parse(savedData);
+        setFormData(prev => ({ ...prev, ...parsedData }));
+      } catch {}
     }
   }, []);
 
@@ -493,10 +499,25 @@ const App: React.FC = () => {
     }
   };
 
-  if (isSubmitted) return <Success userName={formData.prenume} />;
+  const handleHome = () => {
+    if (onHome) {
+      onHome();
+      return;
+    }
+    window.location.href = '/';
+  };
+
+  if (isSubmitted) return <Success userName={formData.prenume} onHome={handleHome} />;
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-start p-4 sm:p-6 relative">
+        <button
+          type="button"
+          onClick={handleHome}
+          className="absolute top-4 left-4 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors duration-300 text-brand-white text-sm font-bold z-20 print:hidden"
+        >
+          ← Acasă
+        </button>
         <div className="absolute top-4 right-4 flex items-center gap-2 z-20 print:hidden">
             <AdminBypassButton isAdmin={isAdminMode} onToggle={() => setIsAdminMode(!isAdminMode)} />
             <button onClick={() => setIsSettingsOpen(true)} className="p-3 rounded-full bg-white/10 hover:bg-white/20 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-brand-button" aria-label="Theme Settings">

@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Candidat, Jurat, Assignment, Status, Criterion, Category, Stage } from '../types';
+import { Candidat, Jurat, Assignment, Status, Criterion, Category, Stage, View } from '../types';
 import { getRegions } from '../utils/regions';
 import Card from './shared/Card';
 import { SearchIcon, SlidersIcon, UserGroupIcon } from './shared/icons';
@@ -16,9 +16,10 @@ interface JudgeViewProps {
   currentJudge: Jurat;
   setAssignments: React.Dispatch<React.SetStateAction<Assignment[]>>;
   isAnonymized?: boolean;
+  onNavigate?: (view: View) => void;
 }
 
-const JudgeView: React.FC<JudgeViewProps> = ({ candidates, assignments, criteria, categories, stages, currentJudge, setAssignments, isAnonymized = false }) => {
+const JudgeView: React.FC<JudgeViewProps> = ({ candidates, assignments, criteria, categories, stages, currentJudge, setAssignments, isAnonymized = false, onNavigate }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<Status | 'all'>('all');
   const [regionFilter, setRegionFilter] = useState<string | 'all'>('all');

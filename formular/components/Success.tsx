@@ -6,9 +6,10 @@ import LinkedInIcon from './icons/LinkedInIcon';
 
 interface SuccessProps {
   userName?: string;
+  onHome?: () => void;
 }
 
-const Success: React.FC<SuccessProps> = ({ userName }) => {
+const Success: React.FC<SuccessProps> = ({ userName, onHome }) => {
   const shareUrl = encodeURIComponent("https://ave-romania.ro/gala-premiilor-pentru-directorii-anului-2026/");
   const shareText = encodeURIComponent("Tocmai mi-am depus candidatura pentru Gala Premiilor pentru Directorii Anului 2026! #DirectorulAnului2026 #AVERomania");
 
@@ -70,6 +71,16 @@ const Success: React.FC<SuccessProps> = ({ userName }) => {
                   <span>Partajează pe LinkedIn</span>
               </a>
           </div>
+        </div>
+        
+        <div className="mt-6">
+          <button
+            type="button"
+            onClick={() => (onHome ? onHome() : (window.location.href = '/'))}
+            className="w-full sm:w-auto px-6 py-3 rounded-lg bg-brand-button hover:bg-opacity-90 transition-colors duration-200 text-brand-white text-sm font-bold focus:outline-none focus:ring-2 focus:ring-brand-button/50"
+          >
+            Înapoi acasă
+          </button>
         </div>
 
       </div>

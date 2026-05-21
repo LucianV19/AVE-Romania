@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Jurat, UserRole } from '../types';
 import JuratRegistrationForm from './JuratRegistrationForm';
+import HomeButton from './shared/HomeButton';
 
 interface JuratAccessViewProps {
   onNavigate: (view: View, user?: Jurat) => void;
@@ -150,12 +151,9 @@ const JuratAccessView: React.FC<JuratAccessViewProps> = ({ onNavigate, onGoHome 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex flex-col items-center justify-center p-4">
       {/* Back to Home Button */}
-      <button
-        onClick={onGoHome}
-        className="absolute top-6 left-6 px-4 py-2 rounded-lg bg-slate-700/50 hover:bg-slate-700 text-white text-sm font-medium transition-colors"
-      >
-        ← Înapoi acasă
-      </button>
+      <div className="absolute top-6 left-6">
+        <HomeButton onNavigate={() => onGoHome()} variant="icon" />
+      </div>
 
       {/* Header */}
       <div className="text-center mb-8">

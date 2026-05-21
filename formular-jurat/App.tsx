@@ -31,7 +31,11 @@ const defaultTheme: ThemeColors = {
   white: '#FFFFFF'
 };
 
-const App: React.FC = () => {
+type AppProps = {
+  onHome?: () => void;
+};
+
+const App: React.FC<AppProps> = ({ onHome }) => {
   const [formData, setFormData] = useState<JuryFormData>(initialFormData);
   const [errors, setErrors] = useState<JuryFormErrors>({});
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -150,7 +154,11 @@ const App: React.FC = () => {
         updated_at: new Date().toISOString()
       };
 
-      const existingRegistrations = JSON.parse(localStorage.getItem('juryRegistrations') || '[]');
+      let existingRegistrations: any[] = [];
+      try {
+        const parsed = JSON.parse(localStorage.getItem('juryRegistrations') || '[]');
+        existingRegistrations = Array.isArray(parsed) ? parsed : [];
+      } catch {}
       existingRegistrations.push(registration);
       localStorage.setItem('juryRegistrations', JSON.stringify(existingRegistrations));
 
@@ -175,7 +183,7 @@ const App: React.FC = () => {
             </p>
             <div className="flex justify-center gap-4">
               <button
-                onClick={() => window.location.href = '/'}
+                onClick={() => (onHome ? onHome() : (window.location.href = '/'))}
                 className="bg-brand-button text-brand-white px-8 py-3 rounded-full font-bold hover:bg-opacity-90 transition-colors"
               >
                 Înapoi la Site
@@ -188,7 +196,14 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-start p-4 sm:p-6">
+    <div className="min-h-screen flex flex-col items-center justify-start p-4 sm:p-6 relative">
+      <button
+        type="button"
+        onClick={() => (onHome ? onHome() : (window.location.href = '/'))}
+        className="absolute top-4 left-4 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors duration-300 text-brand-white text-sm font-bold"
+      >
+        ← Acasă
+      </button>
       <div className="w-full max-w-3xl py-8 sm:py-12">
         <header className="text-center mb-8 sm:mb-12">
           <div className="inline-block border border-brand-text-light p-2 mb-6">

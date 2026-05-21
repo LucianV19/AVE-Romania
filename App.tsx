@@ -45,7 +45,12 @@ const App: React.FC = () => {
   useEffect(() => {
     const loadData = function<T>(key: string, defaultValue: T): T {
       const savedValue = localStorage.getItem(key);
-      return savedValue ? JSON.parse(savedValue) : defaultValue;
+      if (!savedValue) return defaultValue;
+      try {
+        return JSON.parse(savedValue) as T;
+      } catch {
+        return defaultValue;
+      }
     };
 
     const savedTheme = localStorage.getItem('theme');
@@ -74,12 +79,18 @@ const App: React.FC = () => {
       // Force update submissionText from constants for demo candidates
       const constantCandidate = CANDIDATI.find(cc => cc.id === c.id);
       if (constantCandidate && constantCandidate.submissionText) {
+        let extendedData = c.extendedData;
+        if (!extendedData) {
+          try {
+            extendedData = JSON.parse(constantCandidate.submissionText);
+          } catch {}
+        }
         // ALWAYS overwrite submissionText from constants to ensure fresh data
         return { 
             ...c, 
             submissionText: constantCandidate.submissionText,
             // Also try to parse it into extendedData immediately if missing
-            extendedData: c.extendedData || JSON.parse(constantCandidate.submissionText)
+            extendedData
         };
       }
       return c;
@@ -377,9 +388,9 @@ const App: React.FC = () => {
             currentUser={currentUser}
         />;
       case View.FORMULAR:
-        return <FormularApp />;
+        return <FormularApp onHome={() => handleSetView(View.HOME)} />;
       case View.JURAT_FORM:
-        return <JuratFormApp />;
+        return <JuratFormApp onHome={() => handleSetView(View.HOME)} />;
       default:
         return <p>Vedere invalidă</p>;
     }
