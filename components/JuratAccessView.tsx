@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { View, Jurat, UserRole } from '../types';
-import JuratRegistrationForm from './JuratRegistrationForm';
 import HomeButton from './shared/HomeButton';
 
 interface JuratAccessViewProps {
@@ -8,28 +7,11 @@ interface JuratAccessViewProps {
   onGoHome: () => void;
 }
 
-interface JuratFormData {
-  prenume: string;
-  nume: string;
-  functie: string;
-  responsabilitati: string[];
-  linkedinProfile: string;
-  facebookProfile: string;
-  otherProfile: string;
-  recomandari: string;
-  acordGDPR: boolean;
-  acordRegulament: boolean;
-}
-
 const JuratAccessView: React.FC<JuratAccessViewProps> = ({ onNavigate, onGoHome }) => {
-  const [showRegistrationForm, setShowRegistrationForm] = useState(false);
-  const [activeTab, setActiveTab] = useState<'login' | 'signup'>('login');
+  const [activeTab, setActiveTab] = useState<'login' | 'register'>('login');
   const [loginEmail, setLoginEmail] = useState('');
-  const [loginPassword, setLoginPassword] = useState('');
-  const [signupName, setSignupName] = useState('');
-  const [signupEmail, setSignupEmail] = useState('');
-  const [signupPassword, setSignupPassword] = useState('');
-  const [signupConfirmPassword, setSignupConfirmPassword] = useState('');
+  const [accessCode, setAccessCode] = useState('');
+  const [showAccessCode, setShowAccessCode] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -38,115 +20,38 @@ const JuratAccessView: React.FC<JuratAccessViewProps> = ({ onNavigate, onGoHome 
     setError('');
     setLoading(true);
 
-    // Simulated login - in real app would call API
     try {
-      if (!loginEmail || !loginPassword) {
-        setError('Te rog completează email și parola');
+      if (!loginEmail || !accessCode) {
+        setError('Te rog completează email și codul de acces');
         setLoading(false);
         return;
       }
 
-      // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 500));
 
-      // Create mock jurat
+      if (accessCode !== 'demo123') {
+        setError('Credențiale greșite');
+        setLoading(false);
+        return;
+      }
+
       const jurat: Jurat = {
         id: `jurat_${Date.now()}`,
         nume: loginEmail.split('@')[0],
         rol: UserRole.JUDGE,
+        email: loginEmail,
       };
 
-      // Save to localStorage
       localStorage.setItem('currentJurat', JSON.stringify(jurat));
       localStorage.setItem('currentUser', JSON.stringify(jurat));
 
-      // Navigate to judge panel
       onNavigate(View.JUDGE, jurat);
     } catch (err) {
-      setError('Eroare la conectare. Te rog încearcă din nou.');
+      setError('Eroare de rețea. Te rog încearcă din nou.');
     } finally {
       setLoading(false);
     }
   };
-
-  const handleSignup = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-
-    // Validation
-    if (!signupName || !signupEmail || !signupPassword || !signupConfirmPassword) {
-      setError('Te rog completează toate câmpurile');
-      setLoading(false);
-      return;
-    }
-
-    if (signupPassword !== signupConfirmPassword) {
-      setError('Parolele nu coincid');
-      setLoading(false);
-      return;
-    }
-
-    if (signupPassword.length < 6) {
-      setError('Parola trebuie să aibă cel puțin 6 caractere');
-      setLoading(false);
-      return;
-    }
-
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      // Save basic info and open full registration form
-      localStorage.setItem('juratBasicInfo', JSON.stringify({
-        email: signupEmail,
-        password: signupPassword,
-      }));
-
-      // Open full registration form
-      setShowRegistrationForm(true);
-      setLoading(false);
-    } catch (err) {
-      setError('Eroare la înregistrare. Te rog încearcă din nou.');
-      setLoading(false);
-    }
-  };
-
-  const handleFormSubmit = (formData: JuratFormData) => {
-    // Create jurat user
-    const jurat: Jurat = {
-      id: `jurat_${Date.now()}`,
-      nume: `${formData.prenume} ${formData.nume}`,
-      rol: UserRole.JUDGE,
-    };
-
-    // Save to localStorage
-    localStorage.setItem('currentJurat', JSON.stringify(jurat));
-    localStorage.setItem('currentUser', JSON.stringify(jurat));
-    localStorage.setItem('juratFormData', JSON.stringify(formData));
-
-    // Navigate to judge panel after 2 seconds
-    setTimeout(() => {
-      onNavigate(View.JUDGE, jurat);
-    }, 2000);
-  };
-
-  // Show full registration form if user proceeded from signup
-  if (showRegistrationForm) {
-    return (
-      <JuratRegistrationForm 
-        onSubmit={handleFormSubmit}
-        onCancel={() => {
-          setShowRegistrationForm(false);
-          setSignupName('');
-          setSignupEmail('');
-          setSignupPassword('');
-          setSignupConfirmPassword('');
-          setError('');
-        }}
-      />
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex flex-col items-center justify-center p-4">
@@ -177,14 +82,14 @@ const JuratAccessView: React.FC<JuratAccessViewProps> = ({ onNavigate, onGoHome 
               Conectare
             </button>
             <button
-              onClick={() => setActiveTab('signup')}
+              onClick={() => setActiveTab('register')}
               className={`flex-1 py-3 px-4 font-medium transition-colors ${
-                activeTab === 'signup'
+                activeTab === 'register'
                   ? 'bg-purple-600/20 text-purple-300 border-b-2 border-purple-500'
                   : 'text-slate-400 hover:text-slate-300'
               }`}
             >
-              Înregistrare
+              Înscriere
             </button>
           </div>
 
@@ -214,15 +119,24 @@ const JuratAccessView: React.FC<JuratAccessViewProps> = ({ onNavigate, onGoHome 
 
                 <div className="mb-6">
                   <label className="block text-sm font-medium text-slate-300 mb-2">
-                    Parola
+                    Cod de acces
                   </label>
-                  <input
-                    type="password"
-                    value={loginPassword}
-                    onChange={(e) => setLoginPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full px-4 py-2 rounded-lg bg-slate-700/50 border border-slate-600 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  />
+                  <div className="relative">
+                    <input
+                      type={showAccessCode ? 'text' : 'password'}
+                      value={accessCode}
+                      onChange={(e) => setAccessCode(e.target.value)}
+                      placeholder="••••••"
+                      className="w-full px-4 py-2 pr-16 rounded-lg bg-slate-700/50 border border-slate-600 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowAccessCode(v => !v)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-300 hover:text-white px-2 py-1 rounded-md hover:bg-slate-600/50 transition-colors"
+                    >
+                      {showAccessCode ? 'Ascunde' : 'Arată'}
+                    </button>
+                  </div>
                 </div>
 
                 <button
@@ -235,69 +149,19 @@ const JuratAccessView: React.FC<JuratAccessViewProps> = ({ onNavigate, onGoHome 
               </form>
             )}
 
-            {/* Signup Form */}
-            {activeTab === 'signup' && (
-              <form onSubmit={handleSignup}>
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
-                    Nume complet
-                  </label>
-                  <input
-                    type="text"
-                    value={signupName}
-                    onChange={(e) => setSignupName(e.target.value)}
-                    placeholder="Ion Popescu"
-                    className="w-full px-4 py-2 rounded-lg bg-slate-700/50 border border-slate-600 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  />
-                </div>
-
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    value={signupEmail}
-                    onChange={(e) => setSignupEmail(e.target.value)}
-                    placeholder="your@email.com"
-                    className="w-full px-4 py-2 rounded-lg bg-slate-700/50 border border-slate-600 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  />
-                </div>
-
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
-                    Parola
-                  </label>
-                  <input
-                    type="password"
-                    value={signupPassword}
-                    onChange={(e) => setSignupPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full px-4 py-2 rounded-lg bg-slate-700/50 border border-slate-600 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  />
-                </div>
-
-                <div className="mb-6">
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
-                    Confirmă parola
-                  </label>
-                  <input
-                    type="password"
-                    value={signupConfirmPassword}
-                    onChange={(e) => setSignupConfirmPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full px-4 py-2 rounded-lg bg-slate-700/50 border border-slate-600 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  />
-                </div>
-
+            {activeTab === 'register' && (
+              <div>
+                <p className="text-slate-300 text-sm mb-6">
+                  Înscrierea ca jurat se face prin formularul dedicat. După trimitere, accesul se activează prin invitație.
+                </p>
                 <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full py-3 px-4 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 disabled:from-slate-600 disabled:to-slate-700 text-white font-semibold rounded-lg transition-all duration-200"
+                  type="button"
+                  onClick={() => { window.location.href = '/jurat/register'; }}
+                  className="w-full py-3 px-4 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white font-semibold rounded-lg transition-all duration-200"
                 >
-                  {loading ? 'Se înregistrează...' : 'Înregistrare'}
+                  Deschide formularul de înscriere
                 </button>
-              </form>
+              </div>
             )}
 
             {/* Demo Credentials */}
@@ -307,7 +171,7 @@ const JuratAccessView: React.FC<JuratAccessViewProps> = ({ onNavigate, onGoHome 
                 Email: <span className="text-slate-300">demo@jurat.ro</span>
               </p>
               <p className="text-xs text-slate-400">
-                Password: <span className="text-slate-300">demo123</span>
+                Cod acces: <span className="text-slate-300">demo123</span>
               </p>
             </div>
           </div>

@@ -6,6 +6,7 @@ import { SearchIcon, SlidersIcon, UserGroupIcon } from './shared/icons';
 import ScoringPanel from './shared/ScoringPanel';
 import CandidateEvaluationModal from './shared/CandidateEvaluationModal';
 import CandidateCard from './shared/CandidateCard';
+import HomeButton from './shared/HomeButton';
 
 interface JudgeViewProps {
   candidates: Candidat[];
@@ -78,6 +79,8 @@ const JudgeView: React.FC<JudgeViewProps> = ({ candidates, assignments, criteria
       });
   }, [myAssignments, statusFilter, regionFilter, categoryFilter, searchTerm, candidates]);
 
+  const hasAssignmentsForStage = myAssignments.length > 0;
+
   const openScoringPanel = (assignmentId: string) => {
     setSelectedAsignmentId(assignmentId);
   };
@@ -118,6 +121,11 @@ const JudgeView: React.FC<JudgeViewProps> = ({ candidates, assignments, criteria
             )}
           </div>
         </div>
+        {onNavigate && (
+          <div className="flex items-center gap-2">
+            <HomeButton onNavigate={onNavigate} variant="icon" />
+          </div>
+        )}
       </div>
 
       <Card className="p-4">
@@ -176,7 +184,7 @@ const JudgeView: React.FC<JudgeViewProps> = ({ candidates, assignments, criteria
         </div>
       </Card>
 
-      {filteredAssignments.length > 0 ? (
+      {hasAssignmentsForStage && filteredAssignments.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredAssignments.map(assignment => {
             const candidate = candidates.find(c => c.id === assignment.candidatId);
@@ -197,8 +205,16 @@ const JudgeView: React.FC<JudgeViewProps> = ({ candidates, assignments, criteria
           })}
         </div>
       ) : (
-         <div className="text-center py-12">
-            <p className="text-gray-500 dark:text-slate-400">Nu au fost găsiți candidați care să corespundă filtrelor selectate.</p>
+        <div className="text-center py-12">
+          {!hasAssignmentsForStage ? (
+            <p className="text-gray-500 dark:text-slate-400">
+              {activeStage ? `Nu ai asignări pentru etapa curentă: ${activeStage.nume}.` : 'Nu ai asignări disponibile.'}
+            </p>
+          ) : (
+            <p className="text-gray-500 dark:text-slate-400">
+              Nu au fost găsiți candidați care să corespundă filtrelor selectate.
+            </p>
+          )}
         </div>
       )}
 

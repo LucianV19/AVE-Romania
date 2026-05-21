@@ -9,6 +9,7 @@ import ScoringPanel from './shared/ScoringPanel';
 import Dashboard from './Dashboard';
 import { getRegions, saveRegions, resetRegions } from '../utils/regions';
 import HomeButton from './shared/HomeButton';
+import { useNotifications } from './contexts/NotificationContext';
 
 // Helper hook for debouncing input to improve performance on large lists
 function useDebounce<T>(value: T, delay: number): T {
@@ -33,6 +34,7 @@ const RegionsManager: React.FC<{
     addAuditLog: (log: Omit<AuditLog, 'id' | 'timestamp'>) => void;
     currentUser: Admin;
 }> = ({ candidates, setCandidates, addAuditLog, currentUser }) => {
+    const { notify } = useNotifications();
     const [regions, setRegions] = React.useState<string[]>(() => getRegions());
     const [editingIndex, setEditingIndex] = React.useState<number | null>(null);
     const [editingValue, setEditingValue] = React.useState('');
@@ -41,7 +43,7 @@ const RegionsManager: React.FC<{
     const handleSave = () => {
         saveRegions(regions);
         addAuditLog({ adminId: currentUser.id, actiune: 'Actualizare Regiuni', detalii: { modificare: 'Regiuni actualizate' , motiv: 'Regiuni modificate din interfața de administrare.' } });
-        alert('Regiunile au fost salvate.');
+        notify('Regiuni', 'Regiunile au fost salvate.', 'success');
     };
 
     const handleAdd = () => {
@@ -112,7 +114,7 @@ const RegionsManager: React.FC<{
                 <button onClick={handleAdd} className="px-3 py-2 bg-ave-blue text-white rounded-md">Adaugă</button>
             </div>
             <div className="flex justify-end gap-2">
-                <button onClick={() => { resetRegions(); const def = getRegions(); setRegions(def); alert('Regiunile au fost resetate la valorile implicite.'); }} className="px-3 py-1 text-sm rounded-md bg-gray-100">Reset</button>
+                <button onClick={() => { resetRegions(); const def = getRegions(); setRegions(def); notify('Regiuni', 'Regiunile au fost resetate la valorile implicite.', 'info'); }} className="px-3 py-1 text-sm rounded-md bg-gray-100">Reset</button>
                 <button onClick={handleSave} className="px-3 py-1 text-sm rounded-md bg-ave-blue text-white">Salvează</button>
             </div>
         </div>
@@ -1442,10 +1444,6 @@ const JuratEditModal: React.FC<JuratEditModalProps> = ({ jurat, onClose, setJudg
                             <input type="email" name="email" value={formData.email || ''} onChange={handleChange} className="w-full mt-1 border-gray-300 rounded-md dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200" />
                         </div>
                         <div>
-                            <label className="font-semibold text-sm">Parolă</label>
-                            <input type="text" name="password" value={formData.password || ''} onChange={handleChange} className="w-full mt-1 border-gray-300 rounded-md dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200" placeholder="Setează parolă nouă" />
-                        </div>
-                        <div>
                             <label className="font-semibold text-sm">Telefon</label>
                             <input type="tel" name="telefon" value={formData.telefon || ''} onChange={handleChange} className="w-full mt-1 border-gray-300 rounded-md dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200" />
                         </div>
@@ -2180,12 +2178,13 @@ const AssignmentCell: React.FC<{
     onViewObservations: () => void;
     onViewAudit: () => void;
 }> = ({ assignment, onDelete, onAdd, onEdit, onViewObservations, onViewAudit }) => {
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
     if (assignment) {
         const hasObservations = Object.values(assignment.observatii).some(obs => obs && typeof obs === 'string' && obs.trim() !== '');
         return (
-            <div className="flex items-center justify-center group/cell relative h-full w-full">
+            <div className="flex items-center justify-center group/cell relative h-full w-full" onBlur={() => setIsMenuOpen(false)} tabIndex={-1}>
                 <div 
-                    onClick={onEdit}
+                    onClick={() => { setIsMenuOpen(false); onEdit(); }}
                     className={`w-full mx-1 py-1.5 rounded text-xs font-bold truncate cursor-pointer transition-all border shadow-sm ${
                     assignment.status === Status.FINALIZAT ? 'bg-green-100 text-green-700 border-green-200 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800' :
                     assignment.status === Status.IN_CURS ? 'bg-yellow-50 text-yellow-700 border-yellow-200 hover:bg-yellow-100 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-800' :
@@ -2196,14 +2195,36 @@ const AssignmentCell: React.FC<{
                     )}
                 </div>
                 
-                {/* Actions that appear on hover */}
-                <div className="absolute -top-2 -right-1 bg-white dark:bg-slate-800 shadow-lg border dark:border-slate-600 rounded-full p-0.5 flex opacity-0 group-hover/cell:opacity-100 transition-opacity z-20 scale-90">
-                    {hasObservations && (
-                        <button onClick={(e) => { e.stopPropagation(); onViewObservations(); }} className="text-gray-400 hover:text-ave-blue p-1 rounded-full hover:bg-gray-100 dark:hover:bg-slate-700"><ChatBubbleLeftIcon className="w-3 h-3" /></button>
-                    )}
-                    <button onClick={(e) => { e.stopPropagation(); onViewAudit(); }} className="text-gray-400 hover:text-ave-blue p-1 rounded-full hover:bg-gray-100 dark:hover:bg-slate-700"><ClockIcon className="w-3 h-3" /></button>
-                    <button onClick={(e) => { e.stopPropagation(); onDelete(); }} className="text-gray-400 hover:text-red-500 p-1 rounded-full hover:bg-gray-100 dark:hover:bg-slate-700"><TrashIcon className="w-3 h-3" /></button>
-                </div>
+                <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setIsMenuOpen(v => !v); }}
+                    className={`absolute -top-2 -right-1 shadow-lg border dark:border-slate-600 rounded-full p-1 z-20 scale-90 transition-colors ${
+                        hasObservations ? 'bg-white dark:bg-slate-800 text-ave-blue' : 'bg-white dark:bg-slate-800 text-gray-500 dark:text-slate-300'
+                    }`}
+                    aria-label="Acțiuni"
+                    title="Acțiuni"
+                >
+                    <span className="text-xs font-black leading-none px-1">⋯</span>
+                </button>
+
+                {isMenuOpen && (
+                    <div className="absolute top-6 right-0 z-30 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg shadow-xl overflow-hidden min-w-[160px]">
+                        {hasObservations && (
+                            <button onClick={(e) => { e.stopPropagation(); setIsMenuOpen(false); onViewObservations(); }} className="w-full px-3 py-2 text-left text-xs font-semibold hover:bg-gray-50 dark:hover:bg-slate-700 flex items-center gap-2">
+                                <ChatBubbleLeftIcon className="w-4 h-4 text-ave-blue" />
+                                Observații
+                            </button>
+                        )}
+                        <button onClick={(e) => { e.stopPropagation(); setIsMenuOpen(false); onViewAudit(); }} className="w-full px-3 py-2 text-left text-xs font-semibold hover:bg-gray-50 dark:hover:bg-slate-700 flex items-center gap-2">
+                            <ClockIcon className="w-4 h-4 text-ave-blue" />
+                            Audit
+                        </button>
+                        <button onClick={(e) => { e.stopPropagation(); setIsMenuOpen(false); onDelete(); }} className="w-full px-3 py-2 text-left text-xs font-semibold hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 flex items-center gap-2">
+                            <TrashIcon className="w-4 h-4" />
+                            Șterge
+                        </button>
+                    </div>
+                )}
             </div>
         );
     }
@@ -2228,8 +2249,8 @@ interface AssignmentManagementProps extends AdminViewProps {
     setFocusType: (type: 'judge' | 'candidate') => void;
     selectedFocusId: string | null;
     setSelectedFocusId: (id: string | null) => void;
-    statusFilter: Status | 'all';
-    setStatusFilter: (status: Status | 'all') => void;
+    statusFilter: Status | 'all' | 'pending';
+    setStatusFilter: (status: Status | 'all' | 'pending') => void;
 }
 
 const AssignmentManagement: React.FC<AssignmentManagementProps> = (props) => {
@@ -2251,6 +2272,12 @@ const AssignmentManagement: React.FC<AssignmentManagementProps> = (props) => {
     const debouncedSearchTerm = useDebounce(searchTerm, 300);
     const debouncedJudgeSearchTerm = useDebounce(judgeSearchTerm, 300);
     
+    const matchesStatusFilter = (a: Assignment) => {
+        if (statusFilter === 'all') return true;
+        if (statusFilter === 'pending') return a.status !== Status.FINALIZAT;
+        return a.status === statusFilter;
+    };
+
     const activeStages = useMemo(() => stages.filter(s => s.activ), [stages]);
 
     const assignmentCountsByJudge = useMemo(() => {
@@ -2281,15 +2308,6 @@ const AssignmentManagement: React.FC<AssignmentManagementProps> = (props) => {
 
     const ROW_HEIGHT = 68;
     const OVERSCAN = 5;
-
-    const [selectedMatrixStageId, setSelectedMatrixStageId] = useState<string>('');
-
-    // Ensure selectedMatrixStageId is set when stages are loaded or changed
-    useEffect(() => {
-        if (!selectedMatrixStageId && activeStages.length > 0) {
-            setSelectedMatrixStageId(activeStages[0].id);
-        }
-    }, [activeStages, selectedMatrixStageId]);
 
     const handlePromoteCandidate = (candidateId: string, nextStageId: string) => {
         setCandidates(prev => prev.map(c => {
@@ -2337,10 +2355,10 @@ const AssignmentManagement: React.FC<AssignmentManagementProps> = (props) => {
     const assignmentMatrixItems = useMemo(() => {
         const items: { candidate: Candidat; category: Category }[] = [];
         
-        // Filter candidates based on selectedMatrixStageId promotion status
+        // Filter candidates based on selectedStageId promotion status
         let visibleCandidates = candidates;
-        if (selectedMatrixStageId && selectedMatrixStageId !== 'etapa1') {
-             visibleCandidates = candidates.filter(c => c.promotions && c.promotions[selectedMatrixStageId]);
+        if (selectedStageId && selectedStageId !== 'etapa1') {
+             visibleCandidates = candidates.filter(c => c.promotions && c.promotions[selectedStageId]);
         }
 
         visibleCandidates.forEach(candidate => {
@@ -2356,7 +2374,7 @@ const AssignmentManagement: React.FC<AssignmentManagementProps> = (props) => {
             item.candidate.nume.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
             item.candidate.scoala.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
         );
-    }, [candidates, categories, debouncedSearchTerm, selectedMatrixStageId]);
+    }, [candidates, categories, debouncedSearchTerm, selectedStageId]);
 
     const uniqueFocusCandidates = useMemo(() => {
         const seen = new Set<string>();
@@ -2373,25 +2391,19 @@ const AssignmentManagement: React.FC<AssignmentManagementProps> = (props) => {
         return judges.filter(j => {
             const matchesSearch = j.nume.toLowerCase().includes(debouncedJudgeSearchTerm.toLowerCase());
             
-            // Filter by stage configuration
-            // If we are in Matrix view, strict filtering by stage configuration
-            if (viewMode === 'matrix' && selectedMatrixStageId) {
-                if (j.stages && !j.stages.includes(selectedMatrixStageId)) {
-                    return false;
-                }
+            if (viewMode === 'matrix' && selectedStageId) {
+                if (j.stages && !j.stages.includes(selectedStageId)) return false;
             }
-
-            if (statusFilter === 'all') return matchesSearch;
 
             const hasStatus = assignments.some(a => 
                 a.juratId === j.id && 
                 a.etapaId === selectedStageId && 
-                a.status === statusFilter
+                matchesStatusFilter(a)
             );
 
-            return matchesSearch && hasStatus;
+            return matchesSearch && (statusFilter === 'all' ? true : hasStatus);
         });
-    }, [judges, debouncedJudgeSearchTerm, statusFilter, assignments, selectedStageId, viewMode, selectedMatrixStageId]);
+    }, [judges, debouncedJudgeSearchTerm, statusFilter, assignments, selectedStageId, viewMode]);
 
     useEffect(() => {
         setColumnWidths(prev => {
@@ -2471,14 +2483,41 @@ const AssignmentManagement: React.FC<AssignmentManagementProps> = (props) => {
                 return col;
             });
     }, [filteredJudges, columnWidths, selectedStageId]);
+
+    const matrixCandidateWidth = columnWidths.candidate || 300;
+    const matrixAverageScoreWidth = columnWidths.averageScore || 80;
+    
+    const assignmentIndex = useMemo(() => {
+        const map = new Map<string, Assignment>();
+        for (const a of assignments) {
+            if (a.etapaId !== selectedStageId) continue;
+            map.set(`${selectedStageId}:${a.candidatId}:${a.categorieId}:${a.juratId}`, a);
+        }
+        return map;
+    }, [assignments, selectedStageId]);
+
+    const rowStatsIndex = useMemo(() => {
+        const map = new Map<string, { assignedCount: number; finalizedCount: number; sumFinal: number }>();
+        for (const a of assignments) {
+            if (a.etapaId !== selectedStageId) continue;
+            const key = `${a.candidatId}:${a.categorieId}`;
+            const prev = map.get(key) ?? { assignedCount: 0, finalizedCount: 0, sumFinal: 0 };
+            prev.assignedCount += 1;
+            if (a.status === Status.FINALIZAT && typeof a.scorFinal === 'number') {
+                prev.finalizedCount += 1;
+                prev.sumFinal += a.scorFinal;
+            }
+            map.set(key, prev);
+        }
+        return map;
+    }, [assignments, selectedStageId]);
     
     const totalTableWidth = useMemo(() => {
-        const candidateWidth = columnWidths.candidate || 320;
-        const averageScoreWidth = columnWidths.averageScore || 120;
-        const actionsWidth = 120; // Width for the new Actions column
+        const candidateWidth = matrixCandidateWidth;
+        const averageScoreWidth = matrixAverageScoreWidth;
         const judgesWidth = judgeColumns.reduce((sum, col) => sum + col.width, 0);
-        return candidateWidth + averageScoreWidth + judgesWidth + actionsWidth;
-    }, [columnWidths, judgeColumns]);
+        return candidateWidth + averageScoreWidth + judgesWidth;
+    }, [judgeColumns, matrixAverageScoreWidth, matrixCandidateWidth]);
 
     const { virtualRows, paddingTop, paddingBottom } = useMemo(() => {
         if (assignmentMatrixItems.length === 0 || containerHeight === 0) {
@@ -2793,10 +2832,11 @@ const AssignmentManagement: React.FC<AssignmentManagementProps> = (props) => {
                             </div>
                             <select 
                                 value={statusFilter} 
-                                onChange={e => setStatusFilter(e.target.value as Status | 'all')} 
+                                onChange={e => setStatusFilter(e.target.value as Status | 'all' | 'pending')} 
                                 className="px-3 py-2 border border-gray-300 rounded-md text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200"
                             >
                                 <option value="all">Toate Statusurile</option>
+                                <option value="pending">Restante</option>
                                 <option value={Status.NEINCEPUT}>Neînceput</option>
                                 <option value={Status.IN_CURS}>În Curs</option>
                                 <option value={Status.FINALIZAT}>Finalizat</option>
@@ -2812,7 +2852,12 @@ const AssignmentManagement: React.FC<AssignmentManagementProps> = (props) => {
                     <>
                 <div className="md:hidden space-y-4 p-4">
                     {assignmentMatrixItems.map(({ candidate, category }) => {
-                        const candidateAssignments = assignments.filter(a => a.candidatId === candidate.id && a.etapaId === selectedStageId && a.categorieId === category.id);
+                        const candidateAssignments = assignments.filter(a =>
+                            a.candidatId === candidate.id &&
+                            a.etapaId === selectedStageId &&
+                            a.categorieId === category.id &&
+                            matchesStatusFilter(a)
+                        );
                         const finalizedAssignments = candidateAssignments.filter(a => a.status === Status.FINALIZAT && typeof a.scorFinal === 'number');
                         const averageScore = finalizedAssignments.length > 0
                             ? finalizedAssignments.reduce((acc, a) => acc + a.scorFinal!, 0) / finalizedAssignments.length
@@ -2928,7 +2973,11 @@ const AssignmentManagement: React.FC<AssignmentManagementProps> = (props) => {
                                 <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
                                     {focusType === 'judge' ? (
                                         (() => {
-                                            const judgeAssignments = assignments.filter(a => a.juratId === selectedFocusId && a.etapaId === selectedStageId);
+                                            const judgeAssignments = assignments.filter(a =>
+                                                a.juratId === selectedFocusId &&
+                                                a.etapaId === selectedStageId &&
+                                                matchesStatusFilter(a)
+                                            );
                                             return judgeAssignments.length > 0 ? judgeAssignments.map(a => {
                                                 const candidate = candidates.find(c => c.id === a.candidatId);
                                                 const category = categories.find(cat => cat.id === a.categorieId);
@@ -2961,7 +3010,8 @@ const AssignmentManagement: React.FC<AssignmentManagementProps> = (props) => {
                                             const candAssignments = assignments.filter(a => 
                                                 a.candidatId === candId && 
                                                 a.etapaId === selectedStageId && 
-                                                (!catId || a.categorieId === catId)
+                                                (!catId || a.categorieId === catId) &&
+                                                matchesStatusFilter(a)
                                             );
                                             
                                             return candAssignments.length > 0 ? candAssignments.map(a => {
@@ -3002,17 +3052,22 @@ const AssignmentManagement: React.FC<AssignmentManagementProps> = (props) => {
                     <div className="p-4 bg-gray-50 dark:bg-slate-700/50 border-b border-gray-200 dark:border-slate-700 flex flex-wrap items-center justify-between sticky top-0 z-50 gap-4">
                         <div className="flex items-center gap-4">
                             <h4 className="font-bold text-gray-700 dark:text-slate-200">Matrice Evaluare</h4>
+                            <span className="text-sm text-gray-500 dark:text-slate-400">
+                                Etapa: {stages.find(s => s.id === selectedStageId)?.nume || selectedStageId || '-'}
+                            </span>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-3 text-xs font-semibold text-gray-600 dark:text-slate-300">
                             <div className="flex items-center gap-2">
-                                <span className="text-sm text-gray-500 dark:text-slate-400">Etapa:</span>
-                                <select 
-                                    value={selectedMatrixStageId} 
-                                    onChange={e => setSelectedMatrixStageId(e.target.value)}
-                                    className="text-sm border-gray-300 rounded-md dark:bg-slate-600 dark:border-slate-500 dark:text-slate-200 max-w-[200px]"
-                                >
-                                    {activeStages.map(s => (
-                                        <option key={s.id} value={s.id}>{s.nume}</option>
-                                    ))}
-                                </select>
+                                <span className="w-2.5 h-2.5 rounded-full bg-gray-300 dark:bg-slate-500"></span>
+                                <span>Neînceput</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <span className="w-2.5 h-2.5 rounded-full bg-yellow-400"></span>
+                                <span>În curs</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <span className="w-2.5 h-2.5 rounded-full bg-green-500"></span>
+                                <span>Finalizat</span>
                             </div>
                         </div>
                     </div>
@@ -3020,14 +3075,11 @@ const AssignmentManagement: React.FC<AssignmentManagementProps> = (props) => {
                     <table className="min-w-full text-sm border-collapse relative">
                         <thead className="sticky top-0 z-40 bg-gray-50/95 dark:bg-slate-700/95 backdrop-blur shadow-sm">
                             <tr>
-                                <th className="py-3 px-4 text-left font-bold text-gray-700 dark:text-slate-200 sticky left-0 z-50 bg-gray-50 dark:bg-slate-700 border-b border-r dark:border-slate-600 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] min-w-[250px] w-[300px]">
+                                <th className="py-3 px-4 text-left font-bold text-gray-700 dark:text-slate-200 sticky left-0 z-50 bg-gray-50 dark:bg-slate-700 border-b border-r dark:border-slate-600 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] min-w-[250px]" style={{ width: matrixCandidateWidth, minWidth: matrixCandidateWidth }}>
                                     Candidat / Categorie
                                 </th>
-                                <th className="py-3 px-2 text-center font-bold text-gray-700 dark:text-slate-200 sticky z-40 bg-gray-50 dark:bg-slate-700 border-b border-r dark:border-slate-600 w-[80px]" style={{ left: '300px' }}>
-                                    Medie
-                                </th>
-                                <th className="py-3 px-2 text-center font-bold text-gray-700 dark:text-slate-200 sticky z-40 bg-gray-50 dark:bg-slate-700 border-b border-r dark:border-slate-600 w-[100px]" style={{ left: '380px' }}>
-                                    Acțiuni
+                                <th className="py-3 px-2 text-center font-bold text-gray-700 dark:text-slate-200 bg-gray-50 dark:bg-slate-700 border-b border-r dark:border-slate-600" style={{ width: matrixAverageScoreWidth, minWidth: matrixAverageScoreWidth }}>
+                                    Medie / Progres
                                 </th>
                                 {judgeColumns.map(({ id, judge }) => (
                                     <th key={id} className="py-3 px-2 text-center font-semibold text-gray-600 dark:text-slate-300 border-b dark:border-slate-600 min-w-[140px]">
@@ -3058,11 +3110,13 @@ const AssignmentManagement: React.FC<AssignmentManagementProps> = (props) => {
                                             </td>
                                         </tr>
                                         {categoryItems.map(({ candidate }) => {
-                                            const candidateAssignments = assignments.filter(a => a.candidatId === candidate.id && a.etapaId === selectedStageId);
-                                            const finalizedAssignments = candidateAssignments.filter(a => a.status === Status.FINALIZAT && typeof a.scorFinal === 'number' && a.categorieId === category.id);
-                                            const averageScore = finalizedAssignments.length > 0
-                                                ? finalizedAssignments.reduce((acc, a) => acc + a.scorFinal!, 0) / finalizedAssignments.length
-                                                : null;
+                                            const stats = rowStatsIndex.get(`${candidate.id}:${category.id}`);
+                                            const assignedCount = stats?.assignedCount ?? 0;
+                                            const finalizedCount = stats?.finalizedCount ?? 0;
+                                            const averageScore = finalizedCount > 0 ? (stats!.sumFinal / finalizedCount) : null;
+                                            const currentStageIndex = stages.findIndex(s => s.id === selectedStageId);
+                                            const nextStage = currentStageIndex >= 0 ? stages[currentStageIndex + 1] : undefined;
+                                            const isPromoted = nextStage ? !!candidate.promotions?.[nextStage.id] : false;
 
                                             return (
                                                 <tr key={`${candidate.id}-${category.id}`} className="group hover:bg-gray-50 dark:hover:bg-slate-700/30 transition-colors">
@@ -3072,39 +3126,36 @@ const AssignmentManagement: React.FC<AssignmentManagementProps> = (props) => {
                                                                 <p className="font-bold text-gray-900 dark:text-slate-100 truncate">{candidate.nume}</p>
                                                                 <p className="text-xs text-gray-500 dark:text-slate-400 truncate">{candidate.scoala}</p>
                                                             </div>
+                                                            {nextStage ? (
+                                                                <button
+                                                                    onClick={() => isPromoted ? handleDemoteCandidate(candidate.id, nextStage.id) : handlePromoteCandidate(candidate.id, nextStage.id)}
+                                                                    className={`px-2 py-1 rounded text-[11px] font-semibold border ${
+                                                                        isPromoted
+                                                                            ? 'bg-green-100 text-green-700 border-green-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800'
+                                                                            : 'bg-white text-gray-600 border-gray-300 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-600'
+                                                                    }`}
+                                                                    title={isPromoted ? `Retrogradează din ${nextStage.nume}` : `Promovează în ${nextStage.nume}`}
+                                                                >
+                                                                    {isPromoted ? 'Promovat' : 'Promovează'}
+                                                                </button>
+                                                            ) : (
+                                                                <span className="text-xs text-gray-400">Final</span>
+                                                            )}
                                                             <button onClick={() => setSummaryCandidate(candidate)} className="text-gray-300 hover:text-ave-blue flex-shrink-0 p-1 transition-colors">
                                                                 <InformationCircleIcon className="w-5 h-5" />
                                                             </button>
                                                         </div>
                                                     </td>
-                                                    <td className="py-2 px-4 sticky z-20 bg-white dark:bg-slate-800 group-hover:bg-gray-50 dark:group-hover:bg-slate-700/30 border-r dark:border-slate-700 text-center" style={{ left: '300px' }}>
-                                                        <div className={`font-bold text-lg ${averageScore ? 'text-ave-blue' : 'text-gray-300'}`}>
+                                                    <td className="py-2 px-3 bg-white dark:bg-slate-800 group-hover:bg-gray-50 dark:group-hover:bg-slate-700/30 border-r dark:border-slate-700 text-center" style={{ width: matrixAverageScoreWidth, minWidth: matrixAverageScoreWidth }}>
+                                                        <div className={`font-bold text-lg ${averageScore !== null ? 'text-ave-blue' : 'text-gray-300'}`}>
                                                             {averageScore !== null ? averageScore.toFixed(2) : '-'}
                                                         </div>
-                                                    </td>
-                                                    <td className="py-2 px-4 sticky z-20 bg-white dark:bg-slate-800 group-hover:bg-gray-50 dark:group-hover:bg-slate-700/30 border-r dark:border-slate-700 text-center" style={{ left: '380px' }}>
-                                                        {(() => {
-                                                            const currentStageIndex = activeStages.findIndex(s => s.id === selectedMatrixStageId);
-                                                            const nextStage = activeStages[currentStageIndex + 1];
-                                                            const isPromoted = candidate.promotions && nextStage && candidate.promotions[nextStage.id];
-                                                            
-                                                            if (!nextStage) return <span className="text-xs text-gray-400">Final</span>;
-
-                                                            return (
-                                                                <button
-                                                                    onClick={() => isPromoted ? handleDemoteCandidate(candidate.id, nextStage.id) : handlePromoteCandidate(candidate.id, nextStage.id)}
-                                                                    className={`px-2 py-1 rounded text-xs font-semibold border ${isPromoted 
-                                                                        ? 'bg-green-100 text-green-700 border-green-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200' 
-                                                                        : 'bg-white text-gray-600 border-gray-300 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200'}`}
-                                                                    title={isPromoted ? `Retrogradează din ${nextStage.nume}` : `Promovează în ${nextStage.nume}`}
-                                                                >
-                                                                    {isPromoted ? 'Promovat' : 'Promovează'}
-                                                                </button>
-                                                            );
-                                                        })()}
+                                                        <div className={`mt-1 text-[11px] font-mono ${assignedCount > 0 ? 'text-gray-500 dark:text-slate-400' : 'text-gray-300'}`}>
+                                                            {assignedCount > 0 ? `${finalizedCount}/${assignedCount}` : '-'}
+                                                        </div>
                                                     </td>
                                                     {judgeColumns.map(({ id }) => {
-                                                        const assignment = candidateAssignments.find(a => a.juratId === id && a.categorieId === category.id);
+                                                        const assignment = assignmentIndex.get(`${selectedStageId}:${candidate.id}:${category.id}:${id}`);
                                                         return (
                                                             <td key={id} className="p-1 text-center align-middle h-[50px]">
                                                                 <AssignmentCell
@@ -3642,7 +3693,7 @@ const AdminView: React.FC<AdminViewProps> = (props) => {
     const [assignmentStageId, setAssignmentStageId] = useState<string>(activeStages.find(s => s.id === 'etapa3')?.id || activeStages[0]?.id || '');
     const [assignmentFocusType, setAssignmentFocusType] = useState<'judge' | 'candidate'>('judge');
     const [assignmentFocusId, setAssignmentFocusId] = useState<string | null>(null);
-    const [assignmentStatusFilter, setAssignmentStatusFilter] = useState<Status | 'all'>('all');
+    const [assignmentStatusFilter, setAssignmentStatusFilter] = useState<Status | 'all' | 'pending'>('all');
     const [candidateCategoryFilter, setCandidateCategoryFilter] = useState<string>('all');
 
     // Ensure assignmentStageId is valid if stages change

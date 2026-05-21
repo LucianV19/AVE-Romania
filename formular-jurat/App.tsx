@@ -6,7 +6,6 @@ const initialFormData: JuryFormData = {
   prenume: '',
   email: '',
   confirmEmail: '',
-  password: '',
   telefon: '',
   profesie: '',
   organizatie: '',
@@ -43,6 +42,21 @@ const App: React.FC<AppProps> = ({ onHome }) => {
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const [theme] = useState<ThemeColors>(defaultTheme);
+  const handleHome = () => {
+    if (onHome) {
+      onHome();
+      return;
+    }
+    const ref = document.referrer;
+    if (ref) {
+      try {
+        const u = new URL(ref);
+        window.location.assign(`${u.origin}/`);
+        return;
+      } catch {}
+    }
+    window.location.assign('/');
+  };
 
   useEffect(() => {
     const root = document.documentElement;
@@ -99,9 +113,6 @@ const App: React.FC<AppProps> = ({ onHome }) => {
     if (!formData.prenume) newErrors.prenume = 'Prenumele este obligatoriu';
     if (!formData.email) newErrors.email = 'Emailul este obligatoriu';
     else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Adresa de email este invalidă';
-    
-    if (!formData.password) newErrors.password = 'Parola este obligatorie';
-    else if (formData.password.length < 6) newErrors.password = 'Parola trebuie să aibă minim 6 caractere';
 
     if (!formData.motivatie) newErrors.motivatie = 'Motivația este obligatorie';
     if (formData.motivatie && formData.motivatie.length > 400) {
@@ -136,7 +147,6 @@ const App: React.FC<AppProps> = ({ onHome }) => {
         nume: formData.nume,
         prenume: formData.prenume,
         email: formData.email,
-        password: formData.password,
         telefon: formData.telefon,
         profesie: formData.profesie,
         organizatie: formData.organizatie,
@@ -183,7 +193,7 @@ const App: React.FC<AppProps> = ({ onHome }) => {
             </p>
             <div className="flex justify-center gap-4">
               <button
-                onClick={() => (onHome ? onHome() : (window.location.href = '/'))}
+                onClick={handleHome}
                 className="bg-brand-button text-brand-white px-8 py-3 rounded-full font-bold hover:bg-opacity-90 transition-colors"
               >
                 Înapoi la Site
@@ -199,7 +209,7 @@ const App: React.FC<AppProps> = ({ onHome }) => {
     <div className="min-h-screen flex flex-col items-center justify-start p-4 sm:p-6 relative">
       <button
         type="button"
-        onClick={() => (onHome ? onHome() : (window.location.href = '/'))}
+        onClick={handleHome}
         className="absolute top-4 left-4 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors duration-300 text-brand-white text-sm font-bold"
       >
         ← Acasă
@@ -248,18 +258,6 @@ const App: React.FC<AppProps> = ({ onHome }) => {
                   className="w-full px-4 py-3 rounded-md bg-brand-input-bg text-brand-text-dark focus:outline-none focus:ring-2 focus:ring-brand-button"
                 />
                 {errors.email && <p className="text-red-400 text-sm mt-1">{errors.email}</p>}
-              </div>
-
-              <div>
-                <label className="block text-brand-text-light mb-2">Parolă (pentru acces cont) *</label>
-                <input
-                  type="password"
-                  name="password"
-                  value={formData.password || ''}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 rounded-md bg-brand-input-bg text-brand-text-dark focus:outline-none focus:ring-2 focus:ring-brand-button"
-                />
-                {errors.password && <p className="text-red-400 text-sm mt-1">{errors.password}</p>}
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">

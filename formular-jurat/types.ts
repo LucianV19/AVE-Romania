@@ -2,7 +2,6 @@ export interface JuryFormData {
   nume: string;
   prenume: string;
   email: string;
-  password?: string;
   confirmEmail: string;
   telefon: string;
   profesie: string;

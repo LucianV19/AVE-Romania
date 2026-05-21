@@ -57,7 +57,6 @@ export interface Jurat extends User {
   instagram_url?: string;
   motivatie?: string;
   foto_url?: string;
-  password?: string;
   stages?: string[]; // IDs of stages the judge is active in
 }
 

@@ -1,0 +1,7 @@
+{
+  "rewrites": [
+    { "source": "/formular-jurat", "destination": "/formular-jurat/index.html" },
+    { "source": "/formular-jurat/(.*)", "destination": "/formular-jurat/index.html" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}

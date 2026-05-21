@@ -71,6 +71,9 @@ const App: React.FC<AppProps> = ({ onHome }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submissionStatus, setSubmissionStatus] = useState<'idle' | 'validating' | 'submitting' | 'success'>('idle');
   const [justSaved, setJustSaved] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
+  const [showResumePrompt, setShowResumePrompt] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isAdminMode, setIsAdminMode] = useState(false);
   const [scrollToElementId, setScrollToElementId] = useState<string | null>(null);
@@ -105,9 +108,22 @@ const App: React.FC<AppProps> = ({ onHome }) => {
       try {
         const parsedData = JSON.parse(savedData);
         setFormData(prev => ({ ...prev, ...parsedData }));
+        if (parsedData && typeof parsedData === 'object' && Object.keys(parsedData).length > 0) {
+          setShowResumePrompt(true);
+        }
       } catch {}
     }
   }, []);
+
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (!hasUnsavedChanges) return;
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [hasUnsavedChanges]);
 
   const [deadlineLabel, setDeadlineLabel] = useState(DEADLINE_LABEL);
 
@@ -174,6 +190,8 @@ const App: React.FC<AppProps> = ({ onHome }) => {
 
   const silentSaveProgress = () => {
     localStorage.setItem('galaFormData', JSON.stringify(formData));
+    setLastSavedAt(Date.now());
+    setHasUnsavedChanges(false);
   };
 
   const saveProgress = () => {
@@ -181,9 +199,20 @@ const App: React.FC<AppProps> = ({ onHome }) => {
     setJustSaved(true);
     setTimeout(() => setJustSaved(false), 2000);
   };
+
+  const markDirty = () => setHasUnsavedChanges(true);
+
+  useEffect(() => {
+    if (!hasUnsavedChanges) return;
+    const timer = setTimeout(() => {
+      silentSaveProgress();
+    }, 10000);
+    return () => clearTimeout(timer);
+  }, [formData, hasUnsavedChanges]);
   
   const handleDateChange = (name: { year: keyof FormData; month: keyof FormData }, year: string, month: string) => {
     setFormData(prev => ({ ...prev, [name.year]: year, [name.month]: month }));
+    markDirty();
     if (errors[name.year]) setErrors(prev => ({ ...prev, [name.year]: undefined }));
   };
 
@@ -221,6 +250,8 @@ const App: React.FC<AppProps> = ({ onHome }) => {
     } else {
         setFormData(prev => ({ ...prev, [name]: value }));
     }
+
+    markDirty();
     
     if (errors[name as keyof FormData]) {
         setErrors(prev => {
@@ -259,6 +290,7 @@ const App: React.FC<AppProps> = ({ onHome }) => {
           }
         };
       });
+      markDirty();
 
       const reader = new FileReader();
 
@@ -324,6 +356,7 @@ const App: React.FC<AppProps> = ({ onHome }) => {
         }
       };
     });
+    markDirty();
   };
 
   const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
@@ -333,6 +366,7 @@ const App: React.FC<AppProps> = ({ onHome }) => {
   const handleNiveluriChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, checked } = e.currentTarget;
     setFormData(prev => ({ ...prev, niveluriInvatamant: { ...prev.niveluriInvatamant, [name]: checked } }));
+    markDirty();
     if (errors.niveluriInvatamant) setErrors(prev => ({...prev, niveluriInvatamant: undefined}));
   };
 
@@ -353,11 +387,18 @@ const App: React.FC<AppProps> = ({ onHome }) => {
         }
         return { ...prev, categorii: newCategorii, proiecteNarative: newProiecteNarative };
     });
+    markDirty();
     setErrors(prev => ({...prev, categorii: undefined}));
   };
 
-  const handleAddRecomandare = () => setFormData(prev => ({ ...prev, recomandari: [...prev.recomandari, { id: `rec_${Date.now()}`, nume: '', functie: '', telefon: '', tip: '' }] }));
-  const handleRemoveRecomandare = (index: number) => setFormData(prev => ({ ...prev, recomandari: prev.recomandari.filter((_, i) => i !== index) }));
+  const handleAddRecomandare = () => {
+    setFormData(prev => ({ ...prev, recomandari: [...prev.recomandari, { id: `rec_${Date.now()}`, nume: '', functie: '', telefon: '', tip: '' }] }));
+    markDirty();
+  };
+  const handleRemoveRecomandare = (index: number) => {
+    setFormData(prev => ({ ...prev, recomandari: prev.recomandari.filter((_, i) => i !== index) }));
+    markDirty();
+  };
   const handleRecomandareChange = (index: number, e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
     let finalValue = value;
@@ -366,16 +407,24 @@ const App: React.FC<AppProps> = ({ onHome }) => {
     }
     const updatedRecomandari = formData.recomandari.map((item, i) => i === index ? { ...item, [name]: finalValue } : item);
     setFormData(prev => ({ ...prev, recomandari: updatedRecomandari }));
+    markDirty();
   };
 
-  const handleAddOrganizatie = () => setFormData(prev => ({ ...prev, organizatiiReferinta: [...(prev.organizatiiReferinta || []), { id: `org_${Date.now()}`, nume: '', telefon: '' }] }));
-  const handleRemoveOrganizatie = (index: number) => setFormData(prev => ({ ...prev, organizatiiReferinta: (prev.organizatiiReferinta || []).filter((_, i) => i !== index) }));
+  const handleAddOrganizatie = () => {
+    setFormData(prev => ({ ...prev, organizatiiReferinta: [...(prev.organizatiiReferinta || []), { id: `org_${Date.now()}`, nume: '', telefon: '' }] }));
+    markDirty();
+  };
+  const handleRemoveOrganizatie = (index: number) => {
+    setFormData(prev => ({ ...prev, organizatiiReferinta: (prev.organizatiiReferinta || []).filter((_, i) => i !== index) }));
+    markDirty();
+  };
   const handleOrganizatieChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type } = e.target;
     let finalValue = value;
     if (type === 'tel') finalValue = value.replace(/[^0-9]/g, '').slice(0, 10);
     const updated = (formData.organizatiiReferinta || []).map((item, i) => i === index ? { ...item, [name]: finalValue } : item);
     setFormData(prev => ({ ...prev, organizatiiReferinta: updated }));
+    markDirty();
   };
 
   const validateStep = (step = currentStep): boolean => {
@@ -500,24 +549,44 @@ const App: React.FC<AppProps> = ({ onHome }) => {
   };
 
   const handleHome = () => {
+    if (hasUnsavedChanges && !window.confirm('Ai modificări nesalvate. Sigur vrei să ieși?')) {
+      return;
+    }
     if (onHome) {
       onHome();
       return;
     }
-    window.location.href = '/';
+    const ref = document.referrer;
+    if (ref) {
+      try {
+        const u = new URL(ref);
+        window.location.assign(`${u.origin}/`);
+        return;
+      } catch {}
+    }
+    window.location.assign('/');
   };
 
   if (isSubmitted) return <Success userName={formData.prenume} onHome={handleHome} />;
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-start p-4 sm:p-6 relative">
-        <button
-          type="button"
-          onClick={handleHome}
-          className="absolute top-4 left-4 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors duration-300 text-brand-white text-sm font-bold z-20 print:hidden"
-        >
-          ← Acasă
-        </button>
+        <div className="absolute top-4 left-4 flex items-center gap-3 z-20 print:hidden">
+          <button
+            type="button"
+            onClick={handleHome}
+            className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors duration-300 text-brand-white text-sm font-bold"
+          >
+            ← Acasă
+          </button>
+          <div className="text-xs text-brand-text-light/80">
+            {hasUnsavedChanges
+              ? 'Modificări nesalvate'
+              : lastSavedAt
+                ? `Salvat ${new Date(lastSavedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+                : ''}
+          </div>
+        </div>
         <div className="absolute top-4 right-4 flex items-center gap-2 z-20 print:hidden">
             <AdminBypassButton isAdmin={isAdminMode} onToggle={() => setIsAdminMode(!isAdminMode)} />
             <button onClick={() => setIsSettingsOpen(true)} className="p-3 rounded-full bg-white/10 hover:bg-white/20 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-brand-button" aria-label="Theme Settings">
@@ -525,6 +594,39 @@ const App: React.FC<AppProps> = ({ onHome }) => {
             </button>
         </div>
         <ThemeSettings isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} theme={theme} setTheme={setTheme} resetTheme={() => setTheme(defaultTheme)} />
+        {showResumePrompt && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <div className="w-full max-w-md bg-brand-bg/95 border border-white/10 rounded-xl p-6">
+              <h3 className="text-xl font-bold text-brand-white">Am găsit un draft salvat</h3>
+              <p className="text-sm text-brand-text-light mt-2">Vrei să continui completarea sau să începi din nou?</p>
+              <div className="mt-6 flex flex-col sm:flex-row gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowResumePrompt(false)}
+                  className="flex-1 py-3 px-4 rounded-lg bg-brand-button text-brand-white font-bold hover:bg-opacity-90 transition-colors"
+                >
+                  Continuă
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    localStorage.removeItem('galaFormData');
+                    localStorage.removeItem('galaSubmissionPending');
+                    setFormData(initialFormData);
+                    setErrors({});
+                    setCurrentStep(1);
+                    setHasUnsavedChanges(false);
+                    setLastSavedAt(null);
+                    setShowResumePrompt(false);
+                  }}
+                  className="flex-1 py-3 px-4 rounded-lg bg-white/10 text-brand-white font-bold hover:bg-white/20 transition-colors"
+                >
+                  Începe din nou
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="w-full max-w-4xl py-4 sm:py-12">
              <header className="text-center mb-8 sm:mb-12">

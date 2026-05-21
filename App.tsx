@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import Header from './components/Header';
 import HomeView from './components/HomeView';
 import JuratAccessView from './components/JuratAccessView';
@@ -8,19 +9,20 @@ import LeaderboardView from './components/LeaderboardView';
 import AdminView from './components/AdminView';
 import DocumentationView from './components/DocumentationView';
 import FormularApp from './formular/App';
-import JuratFormApp from './formular-jurat/App';
 import { View, Candidat, Jurat, Assignment, AuditLog, Stage, Category, Criterion, User, UserRole, Admin, DocumentationContent, Regiune } from './types';
 import { CANDIDATI, JURATI, ASSIGNMENTS, AUDIT_LOGS, STAGES, CATEGORIES, CRITERIA, ADMINI, DEFAULT_DOCUMENTATION_CONTENT } from './constants';
 import { useNotifications } from './components/contexts/NotificationContext';
 
 const App: React.FC = () => {
   const { notify } = useNotifications();
+  const location = useLocation();
+  const navigate = useNavigate();
   // Combined user list for dropdown
-  const ALL_USERS: User[] = [...JURATI, ...ADMINI];
+  const VIEWER_USER: User = { id: 'viewer', nume: 'Vizitator', rol: UserRole.VIEWER };
+  const ALL_USERS: User[] = [VIEWER_USER, ...JURATI, ...ADMINI];
 
   // App states with mock data initialization
-  const [activeView, setActiveView] = useState<View>(View.HOME);
-  const [currentUser, setCurrentUser] = useState<User>(ADMINI[0]);
+  const [currentUser, setCurrentUser] = useState<User>(VIEWER_USER);
   const [isAnonymized, setIsAnonymized] = useState<boolean>(false);
   const [isDevMode, setIsDevMode] = useState<boolean>(false);
   const [candidates, setCandidates] = useState<Candidat[]>(CANDIDATI);
@@ -60,17 +62,15 @@ const App: React.FC = () => {
       document.documentElement.classList.add('dark');
     }
 
+    let loadedUser: User | undefined;
     const savedUserRaw = localStorage.getItem('currentUser');
     if (savedUserRaw) {
       try {
         const u = JSON.parse(savedUserRaw) as User;
-        if (u && u.id && u.nume && u.rol) setCurrentUser(u);
+        if (u && u.id && u.nume && u.rol) loadedUser = u;
       } catch {}
     }
-    const savedViewRaw = localStorage.getItem('activeView');
-    if (savedViewRaw && Object.values(View).includes(savedViewRaw as View)) {
-      setActiveView(savedViewRaw as View);
-    }
+    if (loadedUser) setCurrentUser(loadedUser);
     
     const savedDevMode = localStorage.getItem('isDevMode');
     if (savedDevMode === 'true') setIsDevMode(true);
@@ -129,10 +129,9 @@ const App: React.FC = () => {
     localStorage.setItem('criteria', JSON.stringify(criteria));
     localStorage.setItem('documentationContent', JSON.stringify(docContent));
     localStorage.setItem('currentUser', JSON.stringify(currentUser));
-    localStorage.setItem('activeView', activeView);
     localStorage.setItem('isAnonymized', String(isAnonymized));
     localStorage.setItem('isDevMode', String(isDevMode));
-  }, [candidates, judges, assignments, auditLogs, stages, categories, criteria, docContent, currentUser, activeView, isAnonymized, isDevMode]);
+  }, [candidates, judges, assignments, auditLogs, stages, categories, criteria, docContent, currentUser, isAnonymized, isDevMode]);
 
   useEffect(() => {
     const categoryIdMap: Record<string, string> = {
@@ -181,6 +180,7 @@ const App: React.FC = () => {
     };
 
     const checkForNewSubmissions = () => {
+      if (currentUser.rol !== UserRole.ADMIN && !isDevMode) return;
       // 1. Check for Candidate Submissions
       const isPending = localStorage.getItem('galaSubmissionPending') === 'true';
       if (isPending) {
@@ -261,8 +261,7 @@ const App: React.FC = () => {
                     facebook_url: reg.facebook_url,
                     instagram_url: reg.instagram_url,
                     motivatie: reg.motivatie,
-                    foto_url: reg.foto_url,
-                    password: reg.password
+                    foto_url: reg.foto_url
                  };
                  newJudges.push(newJudge);
                  addedCount++;
@@ -296,111 +295,137 @@ const App: React.FC = () => {
     checkForNewSubmissions();
     const interval = setInterval(checkForNewSubmissions, 5000);
     return () => clearInterval(interval);
-  }, [categories, currentUser.id]);
+  }, [categories, currentUser.id, currentUser.rol, isDevMode, judges]);
 
-  const handleSetView = (view: View) => {
-    // Only switch user role if absolutely necessary
-    if (view === View.ADMIN && currentUser.rol !== UserRole.ADMIN) {
-        const adminUser = ALL_USERS.find(u => u.rol === UserRole.ADMIN);
-        if(adminUser) {
-          setCurrentUser(adminUser);
-          // Save current user preference to localStorage
-          localStorage.setItem('currentUser', JSON.stringify(adminUser));
-        }
-    } else if (view === View.JUDGE && currentUser.rol !== UserRole.JUDGE) {
-        const judgeUser = ALL_USERS.find(u => u.rol === UserRole.JUDGE);
-        if(judgeUser) {
-          setCurrentUser(judgeUser);
-          // Save current user preference to localStorage
-          localStorage.setItem('currentUser', JSON.stringify(judgeUser));
-        }
-    }
-    // Save active view preference to localStorage
-    localStorage.setItem('activeView', view);
-    setActiveView(view);
-  }
-  
-  const renderView = () => {
-    const commonProps = {
-        candidates,
-        judges,
-        assignments,
-        stages,
-        categories,
-        criteria,
-    }
+  const ExternalRedirect: React.FC<{ to: string }> = ({ to }) => {
+    useEffect(() => {
+      window.location.assign(to);
+    }, [to]);
+    return <div className="min-h-screen flex items-center justify-center p-6 text-gray-600 dark:text-slate-300">Se redirecționează...</div>;
+  };
 
-    switch (activeView) {
+  const JURAT_FORM_URL =
+    import.meta.env.DEV
+      ? (import.meta.env.VITE_JURAT_DEV_URL as string | undefined) || 'http://localhost:3002/formular-jurat/'
+      : '/formular-jurat/';
+
+  const pathForView = (view: View) => {
+    switch (view) {
       case View.HOME:
-        return <HomeView 
-                    onNavigate={handleSetView}
-                    isDevMode={isDevMode}
-                    setIsDevMode={setIsDevMode}
-                />;
-      case View.JURAT_ACCESS:
-        return <JuratAccessView 
-                    onNavigate={handleSetView}
-                    onGoHome={() => handleSetView(View.HOME)}
-                />;
-      case View.ADMIN_ACCESS:
-        return <AdminAccessView 
-                    onNavigate={handleSetView}
-                    onGoHome={() => handleSetView(View.HOME)}
-                />;
-      case View.JUDGE:
-        if (currentUser.rol !== UserRole.JUDGE) {
-            return <div className="text-center p-10"><p className="text-red-600 dark:text-red-400">Nu aveți permisiuni pentru a accesa această pagină.</p></div>
-        }
-        return <JudgeView 
-                    {...commonProps}
-                    currentJudge={currentUser as Jurat} 
-                    setAssignments={setAssignments}
-                    isAnonymized={isAnonymized}
-                />;
-      case View.LEADERBOARD:
-        return <LeaderboardView 
-                    {...commonProps}
-                    setCandidates={setCandidates}
-                    currentUser={currentUser}
-                />;
-      case View.ADMIN:
-         if (currentUser.rol !== UserRole.ADMIN) {
-            return <div className="text-center p-10"><p className="text-red-600 dark:text-red-400">Nu aveți permisiuni pentru a accesa această pagină.</p></div>
-        }
-        return <AdminView 
-                    {...commonProps} 
-                    auditLogs={auditLogs}
-                    setCandidates={setCandidates}
-                    setAssignments={setAssignments}
-                    setStages={setStages}
-                    setCategories={setCategories}
-                    setCriteria={setCriteria}
-                    setJudges={setJudges}
-                    addAuditLog={addAuditLog}
-                    currentUser={currentUser as Admin}
-                    isAnonymized={isAnonymized}
-                    setIsAnonymized={setIsAnonymized}
-                />;
-      case View.DOCUMENTATION:
-        return <DocumentationView 
-            docContent={docContent}
-            setDocContent={setDocContent}
-            currentUser={currentUser}
-        />;
+        return '/';
       case View.FORMULAR:
-        return <FormularApp onHome={() => handleSetView(View.HOME)} />;
+        return '/director';
+      case View.JURAT_ACCESS:
+        return '/jurat';
       case View.JURAT_FORM:
-        return <JuratFormApp onHome={() => handleSetView(View.HOME)} />;
+        return '/jurat/register';
+      case View.ADMIN_ACCESS:
+        return '/admin/login';
+      case View.JUDGE:
+        return '/judge';
+      case View.ADMIN:
+        return '/admin';
+      case View.LEADERBOARD:
+        return '/leaderboard';
+      case View.DOCUMENTATION:
+        return '/docs';
       default:
-        return <p>Vedere invalidă</p>;
+        return '/';
     }
   };
 
+  const handleSetView = (view: View) => {
+    navigate(pathForView(view));
+  };
+
+  const handleAuthNavigate = (view: View, user?: User) => {
+    if (user) setCurrentUser(user);
+    handleSetView(view);
+  };
+
+  const currentView: View = (() => {
+    const p = location.pathname;
+    if (p === '/') return View.HOME;
+    if (p.startsWith('/director')) return View.FORMULAR;
+    if (p === '/jurat') return View.JURAT_ACCESS;
+    if (p.startsWith('/jurat/register')) return View.JURAT_FORM;
+    if (p.startsWith('/admin/login')) return View.ADMIN_ACCESS;
+    if (p.startsWith('/admin')) return View.ADMIN;
+    if (p.startsWith('/judge')) return View.JUDGE;
+    if (p.startsWith('/leaderboard')) return View.LEADERBOARD;
+    if (p.startsWith('/docs')) return View.DOCUMENTATION;
+    return View.HOME;
+  })();
+
+  const showHeader = (() => {
+    const p = location.pathname;
+    if (p === '/') return false;
+    if (p === '/jurat') return false;
+    if (p.startsWith('/admin/login')) return false;
+    if (p.startsWith('/director')) return false;
+    if (p.startsWith('/jurat/register')) return false;
+    return true;
+  })();
+
+  const commonProps = {
+    candidates,
+    judges,
+    assignments,
+    stages,
+    categories,
+    criteria,
+  };
+
+  const devJudge: Jurat = (JURATI[0] as Jurat | undefined) ?? {
+    id: 'dev-judge',
+    nume: 'Jurat (Dev)',
+    rol: UserRole.JUDGE,
+  };
+
+  const devAdmin: Admin = (ADMINI[0] as Admin | undefined) ?? {
+    id: 'dev-admin',
+    nume: 'Admin (Dev)',
+    rol: UserRole.ADMIN,
+  };
+
+  const judgeElement =
+    currentUser.rol === UserRole.JUDGE || isDevMode ? (
+      <JudgeView
+        {...commonProps}
+        currentJudge={(currentUser.rol === UserRole.JUDGE ? (currentUser as Jurat) : devJudge)}
+        setAssignments={setAssignments}
+        isAnonymized={isAnonymized}
+        onNavigate={handleSetView}
+      />
+    ) : (
+      <Navigate to="/jurat" replace />
+    );
+
+  const adminElement =
+    currentUser.rol === UserRole.ADMIN || isDevMode ? (
+      <AdminView
+        {...commonProps}
+        auditLogs={auditLogs}
+        setCandidates={setCandidates}
+        setAssignments={setAssignments}
+        setStages={setStages}
+        setCategories={setCategories}
+        setCriteria={setCriteria}
+        setJudges={setJudges}
+        addAuditLog={addAuditLog}
+        currentUser={(currentUser.rol === UserRole.ADMIN ? (currentUser as Admin) : devAdmin)}
+        isAnonymized={isAnonymized}
+        setIsAnonymized={setIsAnonymized}
+      />
+    ) : (
+      <Navigate to="/admin/login" replace />
+    );
+
   return (
     <div className="bg-gray-100/50 dark:bg-slate-900 min-h-screen">
-      {activeView !== View.HOME && activeView !== View.JURAT_ACCESS && activeView !== View.ADMIN_ACCESS && activeView !== View.FORMULAR && activeView !== View.JURAT_FORM && (
+      {showHeader && (
         <Header
-          currentView={activeView}
+          currentView={currentView}
           setView={handleSetView}
           currentUser={currentUser}
           setCurrentUser={setCurrentUser}
@@ -409,8 +434,28 @@ const App: React.FC = () => {
           setIsDevMode={setIsDevMode}
         />
       )}
-      <main className={activeView === View.HOME || activeView === View.JURAT_ACCESS || activeView === View.ADMIN_ACCESS || activeView === View.FORMULAR || activeView === View.JURAT_FORM ? '' : 'container mx-auto p-4 sm:p-6 lg:p-8'}>
-        {renderView()}
+      <main className={showHeader ? 'container mx-auto p-4 sm:p-6 lg:p-8' : ''}>
+        <Routes>
+          <Route
+            path="/"
+            element={<HomeView onNavigate={handleSetView} isDevMode={isDevMode} setIsDevMode={setIsDevMode} />}
+          />
+          <Route path="/director" element={<FormularApp onHome={() => navigate('/')} />} />
+          <Route path="/jurat" element={<JuratAccessView onNavigate={handleAuthNavigate} onGoHome={() => navigate('/')} />} />
+          <Route path="/jurat/register" element={<ExternalRedirect to={JURAT_FORM_URL} />} />
+          <Route path="/admin/login" element={<AdminAccessView onNavigate={handleAuthNavigate} onGoHome={() => navigate('/')} />} />
+          <Route path="/judge" element={judgeElement} />
+          <Route
+            path="/leaderboard"
+            element={<LeaderboardView {...commonProps} setCandidates={setCandidates} currentUser={currentUser} />}
+          />
+          <Route path="/admin" element={adminElement} />
+          <Route
+            path="/docs"
+            element={<DocumentationView docContent={docContent} setDocContent={setDocContent} currentUser={currentUser} />}
+          />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
       </main>
     </div>
   );

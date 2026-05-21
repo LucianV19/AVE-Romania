@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Admin, UserRole } from '../types';
+import HomeButton from './shared/HomeButton';
 
 interface AdminAccessViewProps {
   onNavigate: (view: View, user?: Admin) => void;
@@ -9,6 +10,7 @@ interface AdminAccessViewProps {
 const AdminAccessView: React.FC<AdminAccessViewProps> = ({ onNavigate, onGoHome }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -55,13 +57,9 @@ const AdminAccessView: React.FC<AdminAccessViewProps> = ({ onNavigate, onGoHome 
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex flex-col items-center justify-center p-4">
-      {/* Back to Home Button */}
-      <button
-        onClick={onGoHome}
-        className="absolute top-6 left-6 px-4 py-2 rounded-lg bg-slate-700/50 hover:bg-slate-700 text-white text-sm font-medium transition-colors"
-      >
-        ← Înapoi acasă
-      </button>
+      <div className="absolute top-6 left-6">
+        <HomeButton onNavigate={() => onGoHome()} variant="icon" />
+      </div>
 
       {/* Header */}
       <div className="text-center mb-8">
@@ -96,13 +94,22 @@ const AdminAccessView: React.FC<AdminAccessViewProps> = ({ onNavigate, onGoHome 
               <label className="block text-sm font-medium text-slate-300 mb-2">
                 Parola
               </label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full px-4 py-2 rounded-lg bg-slate-700/50 border border-slate-600 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full px-4 py-2 pr-16 rounded-lg bg-slate-700/50 border border-slate-600 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(v => !v)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-300 hover:text-white px-2 py-1 rounded-md hover:bg-slate-600/50 transition-colors"
+                >
+                  {showPassword ? 'Ascunde' : 'Arată'}
+                </button>
+              </div>
             </div>
 
             <button

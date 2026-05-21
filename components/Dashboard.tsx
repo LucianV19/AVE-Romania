@@ -19,7 +19,7 @@ interface DashboardProps {
   setAssignmentStageId: (id: string) => void;
   setAssignmentFocusType: (type: 'judge' | 'candidate') => void;
   setAssignmentFocusId: (id: string | null) => void;
-  setAssignmentStatusFilter: (status: Status | 'all') => void;
+  setAssignmentStatusFilter: (status: Status | 'all' | 'pending') => void;
   onNavigateToCategory?: (categoryId: string) => void;
 }
 
@@ -43,7 +43,39 @@ const Dashboard: React.FC<DashboardProps> = ({
     ? Math.round((completedAssignments / totalAssignments) * 100) 
     : 0;
 
-  const activeStage = stages.find(s => s.activ);
+  const currentStage = stages.find(s => s.isCurrent) || stages.find(s => s.activ) || stages[0];
+  const currentStageId = currentStage?.id || '';
+  const REQUIRED_JUDGES_PER_CANDIDATE = 3;
+
+  const candidatesWithoutEnoughAssignments = useMemo(() => {
+    if (!currentStageId) return 0;
+    const countByCandidate = new Map<string, number>();
+    for (const a of assignments) {
+      if (a.etapaId !== currentStageId) continue;
+      countByCandidate.set(a.candidatId, (countByCandidate.get(a.candidatId) || 0) + 1);
+    }
+    let count = 0;
+    for (const c of candidates) {
+      const assigned = countByCandidate.get(c.id) || 0;
+      if (assigned > 0 && assigned < REQUIRED_JUDGES_PER_CANDIDATE) count += 1;
+    }
+    return count;
+  }, [assignments, candidates, currentStageId]);
+
+  const judgesWithoutAssignmentsInStage = useMemo(() => {
+    if (!currentStageId) return 0;
+    const set = new Set(assignments.filter(a => a.etapaId === currentStageId).map(a => a.juratId));
+    return judges.filter(j => !set.has(j.id)).length;
+  }, [assignments, judges, currentStageId]);
+
+  const avgTimeSinceFinalizationMs = useMemo(() => {
+    if (!currentStageId) return null;
+    const now = Date.now();
+    const finalized = assignments.filter(a => a.etapaId === currentStageId && a.status === Status.FINALIZAT && a.lastModified instanceof Date);
+    if (finalized.length === 0) return null;
+    const totalMs = finalized.reduce((sum, a) => sum + (now - a.lastModified.getTime()), 0);
+    return Math.round(totalMs / finalized.length);
+  }, [assignments, currentStageId]);
 
   const assignmentsByStage = useMemo(() => {
     return stages.map(stage => {
@@ -67,7 +99,7 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   const judgesActivity = useMemo(() => {
       return judges.map(judge => {
-          const judgeAssignments = assignments.filter(a => a.juratId === judge.id);
+          const judgeAssignments = assignments.filter(a => a.juratId === judge.id && (!currentStageId || a.etapaId === currentStageId));
           const done = judgeAssignments.filter(a => a.status === Status.FINALIZAT).length;
           const pending = judgeAssignments.length - done;
           return {
@@ -77,7 +109,7 @@ const Dashboard: React.FC<DashboardProps> = ({
               total: judgeAssignments.length
           };
       }).sort((a, b) => b.pending - a.pending);
-  }, [judges, assignments]);
+  }, [judges, assignments, currentStageId]);
 
   const laggingJudges = judgesActivity.filter(j => j.pending > 0).slice(0, 5);
   const topJudges = judgesActivity.filter(j => j.total > 0).sort((a, b) => b.done - a.done).slice(0, 5);
@@ -113,6 +145,16 @@ const Dashboard: React.FC<DashboardProps> = ({
       });
   }, [REGIONS_TO_SHOW.join('|'), candidates, totalCandidates]);
 
+  const formatDuration = (ms: number) => {
+    const totalMinutes = Math.floor(ms / 60000);
+    const days = Math.floor(totalMinutes / 1440);
+    const hours = Math.floor((totalMinutes % 1440) / 60);
+    const minutes = totalMinutes % 60;
+    if (days > 0) return `${days}z ${hours}h`;
+    if (hours > 0) return `${hours}h ${minutes}m`;
+    return `${minutes}m`;
+  };
+
 
   return (
     <div className="space-y-8">
@@ -123,6 +165,13 @@ const Dashboard: React.FC<DashboardProps> = ({
             <p className="text-gray-500 dark:text-slate-400 mt-1">
                 Bine ai venit în centrul de comandă al Galei Directorii Anului.
             </p>
+            {currentStage && (
+              <div className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                <span className="w-2.5 h-2.5 rounded-full bg-ave-blue"></span>
+                <span className="text-xs font-bold text-slate-700 dark:text-slate-200">Etapa curentă:</span>
+                <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">{currentStage.nume}</span>
+              </div>
+            )}
         </div>
         <div className="flex items-center gap-3 px-4 py-2 bg-blue-50 dark:bg-slate-800 rounded-xl border border-blue-100 dark:border-slate-700">
             <div className="relative w-10 h-10 flex items-center justify-center">
@@ -174,8 +223,48 @@ const Dashboard: React.FC<DashboardProps> = ({
             onClick={() => {
                 setActiveTab('assignments');
                 setAssignmentViewMode('focus');
-                setAssignmentStatusFilter(Status.IN_CURS);
+                setAssignmentStatusFilter('pending');
             }}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <KPICard
+          title={`Candidați sub ${REQUIRED_JUDGES_PER_CANDIDATE} asignări (etapa curentă)`}
+          value={candidatesWithoutEnoughAssignments}
+          icon={<ClipboardDocumentCheckIcon className="w-6 h-6 text-white" />}
+          color="bg-rose-500"
+          onClick={() => {
+            setActiveTab('assignments');
+            setAssignmentViewMode('matrix');
+            if (currentStageId) setAssignmentStageId(currentStageId);
+            setAssignmentStatusFilter('pending');
+          }}
+        />
+        <KPICard
+          title="Jurați fără asignări (etapa curentă)"
+          value={judgesWithoutAssignmentsInStage}
+          icon={<UserGroupIcon className="w-6 h-6 text-white" />}
+          color="bg-slate-500"
+          onClick={() => {
+            setActiveTab('assignments');
+            setAssignmentViewMode('focus');
+            if (currentStageId) setAssignmentStageId(currentStageId);
+            setAssignmentFocusType('judge');
+            setAssignmentStatusFilter('all');
+          }}
+        />
+        <KPICard
+          title="Timp mediu de la finalizare (etapa curentă)"
+          value={avgTimeSinceFinalizationMs ? formatDuration(avgTimeSinceFinalizationMs) : '-'}
+          icon={<ClockIcon className="w-6 h-6 text-white" />}
+          color="bg-teal-500"
+          onClick={() => {
+            setActiveTab('assignments');
+            setAssignmentViewMode('focus');
+            if (currentStageId) setAssignmentStageId(currentStageId);
+            setAssignmentStatusFilter(Status.FINALIZAT);
+          }}
         />
       </div>
 
@@ -186,13 +275,31 @@ const Dashboard: React.FC<DashboardProps> = ({
           </h4>
           <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-slate-700">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch">
-                  {registrationStats.map(r => (
-                      <Card key={r.region} className="p-4 flex flex-col items-center justify-center">
-                          <Donut percent={r.percent} size={96} strokeWidth={6} color="#3b82f6" />
-                          <div className="text-sm font-semibold mt-3 text-gray-800 dark:text-slate-200 text-center">{r.region}</div>
-                          <div className="text-xs text-gray-500 dark:text-slate-400">{r.count} înscrieri</div>
-                      </Card>
-                  ))}
+                  {registrationStats.map((r, idx) => {
+                      const color = '#3b82f6';
+                      return (
+                          <Card key={r.region} className="p-4 relative overflow-hidden bg-gradient-to-br from-blue-50/70 to-white dark:from-blue-900/10 dark:to-slate-800">
+                              <div className="absolute inset-y-0 left-0 w-1" style={{ backgroundColor: color }} />
+                              <div className="flex items-center gap-4">
+                                  <Donut percent={r.percent} size={84} strokeWidth={7} color={color} />
+                                  <div className="min-w-0 flex-1">
+                                      <div className="flex items-center justify-between gap-3">
+                                          <div className="text-sm font-bold text-gray-800 dark:text-slate-100 truncate">{r.region}</div>
+                                          <div className="text-xs font-black text-gray-700 dark:text-slate-200">{r.percent}%</div>
+                                      </div>
+                                      <div className="mt-1 text-xs text-gray-500 dark:text-slate-400">
+                                          <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-white/70 dark:bg-slate-900/30 border border-blue-100/70 dark:border-blue-900/30 font-semibold">
+                                              {r.count} înscrieri
+                                          </span>
+                                      </div>
+                                      <div className="mt-3 w-full bg-white/70 dark:bg-slate-900/20 border border-blue-100/70 dark:border-blue-900/30 rounded-full h-2 overflow-hidden">
+                                          <div className="h-full rounded-full" style={{ width: `${r.percent}%`, backgroundColor: color }}></div>
+                                      </div>
+                                  </div>
+                              </div>
+                          </Card>
+                      );
+                  })}
               </div>
           </div>
       </section>
@@ -205,8 +312,8 @@ const Dashboard: React.FC<DashboardProps> = ({
           <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-slate-700 overflow-x-auto">
               <div className="flex items-center w-full gap-4">
                   {assignmentsByStage.filter(s => s.id !== 'etapa_finala').map((stage, idx, arr) => {
-                      const isActive = activeStage?.id === stage.id;
-                      const isPast = arr.findIndex(s => s.id === activeStage?.id) > idx;
+                      const isActive = currentStageId === stage.id;
+                      const isPast = arr.findIndex(s => s.id === currentStageId) > idx;
                       
                       return (
                           <React.Fragment key={stage.id}>
@@ -322,8 +429,10 @@ const Dashboard: React.FC<DashboardProps> = ({
                         onClick={() => {
                             setActiveTab('assignments');
                             setAssignmentViewMode('focus');
+                            if (currentStageId) setAssignmentStageId(currentStageId);
                             setAssignmentFocusType('judge');
                             setAssignmentFocusId(j.id);
+                            setAssignmentStatusFilter('pending');
                         }}
                      >
                          <span>{j.nume}</span>
@@ -395,10 +504,9 @@ const KPICard = ({ title, value, icon, color, onClick }: any) => (
         className="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-slate-700 cursor-pointer hover:-translate-y-1 hover:shadow-md transition-all duration-300"
     >
         <div className="flex justify-between items-start mb-4">
-            <div className={`p-3 rounded-xl shadow-lg shadow-${color.split('-')[1]}-500/20 ${color}`}>
+            <div className={`p-3 rounded-xl shadow-lg ${color}`}>
                 {icon}
             </div>
-            {/* Optional trend indicator could go here */}
         </div>
         <p className="text-3xl font-black text-gray-800 dark:text-white mb-1">{value}</p>
         <p className="text-sm font-medium text-gray-400 dark:text-slate-500 uppercase tracking-wide">{title}</p>
